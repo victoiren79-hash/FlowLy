@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLy</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header Styles */
+        header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        
+        .tagline {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-top: -4px;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        /* Navigation */
+        nav {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+        }
+        
+        .nav-links a {
+            display: block;
+            padding: 16px 0;
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .nav-links a.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 32px 0 24px 0;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 32px 0;
+        }
+        
+        .form-container {
+            max-width: 800px;
+            margin: 32px auto;
+        }
+
+        .form-card {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background-color: white;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Items Table */
+        .items-container {
+            overflow-x: auto;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            min-width: 600px;
+        }
+
+        .items-table th {
+            background: var(--gray-50);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .items-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .item-row input {
+            margin: 0;
+            border: 1px solid var(--gray-200);
+            width: 100%;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .btn-icon {
+            background: none;
+            border: 1px solid var(--gray-200);
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: var(--gray-50);
+        }
+
+        /* Form Actions */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        /* Total Section */
+        .total-section {
+            background: var(--gray-50);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .total-final {
+            font-size: 18px;
+            font-weight: 700;
+            border-top: 1px solid var(--gray-200);
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .header-content {
+                padding: 12px 0;
+            }
+            
+            .logo-text {
+                font-size: 18px;
+            }
+            
+            .tagline {
+                display: none;
+            }
+            
+            .nav-links {
+                gap: 16px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+            }
+            
+            .nav-links a {
+                padding: 12px 0;
+                white-space: nowrap;
+            }
+            
+            .page-header {
+                margin: 24px 0 20px 0;
+            }
+            
+            .page-title {
+                font-size: 20px;
+            }
+            
+            .form-card {
+                padding: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .form-group {
+                margin-bottom: 16px;
+            }
+            
+            .form-actions {
+                flex-direction: column-reverse;
+                gap: 10px;
+            }
+            
+            .form-actions button {
+                width: 100%;
+            }
+            
+            .items-table {
+                font-size: 14px;
+            }
+            
+            .items-table th,
+            .items-table td {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 14px;
+            }
+            
+            .user-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+            
+            .form-card {
+                padding: 16px;
+            }
+            
+            .section-title {
+                font-size: 16px;
+            }
+            
+            input, select, textarea {
+                padding: 10px;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">Fly</div>
+                    <div>
+                        <div class="logo-text">CashFlow Vista</div>
+                        <div class="tagline">Get visibility over your cash flow</div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="invoices.html">Invoices</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="setting.html">Settings</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <div class="page-header">
+            <h1 class="page-title">Create New Invoice</h1>
+        </div>
+
+        <div class="form-container">
+            <div class="form-card">
+                <form id="invoiceForm">
+                    <div class="form-section">
+                        <h2 class="section-title">Client Information</h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="clientName">Client Name *</label>
+                                <input type="text" id="clientName" name="clientName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="clientEmail">Client Email</label>
+                                <input type="email" id="clientEmail" name="clientEmail">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="clientAddress">Client Address</label>
+                                <textarea id="clientAddress" name="clientAddress" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2 class="section-title">Invoice Details</h2>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="invoiceNumber">Invoice Number *</label>
+                                <input type="text" id="invoiceNumber" name="invoiceNumber" value="INV-001" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="issueDate">Issue Date *</label>
+                                <input type="date" id="issueDate" name="issueDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="dueDate">Due Date *</label>
+                                <input type="date" id="dueDate" name="dueDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="currency">Currency</label>
+                                <select id="currency" name="currency">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2 class="section-title">Items & Services</h2>
+                        <div class="items-container">
+                            <table class="items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th width="100">Quantity</th>
+                                        <th width="120">Unit Price</th>
+                                        <th width="120">Amount</th>
+                                        <th width="60"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <tr class="item-row">
+                                        <td><input type="text" name="itemDesc[]" placeholder="Item description"></td>
+                                        <td><input type="number" name="itemQty[]" value="1" min="1" class="item-qty"></td>
+                                        <td><input type="number" name="itemPrice[]" value="0" step="0.01" class="item-price"></td>
+                                        <td><span class="item-total">$0.00</span></td>
+                                        <td><button type="button" class="btn-icon remove-item">❌</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn-secondary" id="addItem" style="margin-top: 12px;">
+                            + Add Item
+                        </button>
+                    </div>
+
+                    <div class="total-section">
+                        <div class="total-row">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">$0.00</span>
+                        </div>
+                        <div class="total-row">
+                            <span>Tax (10%):</span>
+                            <span id="taxAmount">$0.00</span>
+                        </div>
+                        <div class="total-row total-final">
+                            <span>Total:</span>
+                            <span id="totalAmount">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h2 class="section-title">Notes & Terms</h2>
+                        <div class="form-group full-width">
+                            <label for="notes">Notes to Client</label>
+                            <textarea id="notes" name="notes" rows="3" placeholder="Add any additional notes..."></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="terms">Payment Terms</label>
+                            <textarea id="terms" name="terms" rows="2" placeholder="Net 30 days..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="location.href='invoices.html'">
+                            Cancel
+                        </button>
+                        <button type="button" class="btn-secondary" id="saveDraft">
+                            Save Draft
+                        </button>
+                        <button type="submit" class="btn-primary" id="submitBtn">
+                            Create Invoice
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+<script>
+    const supabaseUrl = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+    const supabaseKey = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    
+    // Store user globally
+    let currentUser = null;
+
+    // Check authentication on load
+    async function checkAuth() {
+        try {
+            const { data: { user }, error } = await supabaseClient.auth.getUser();
+            
+            if (error) {
+                console.error('Auth error:', error);
+                alert('Authentication error: ' + error.message);
+                return false;
+            }
+            
+            if (!user) {
+                console.log('No user found, redirecting to login');
+                // You might want to redirect to a login page
+                // window.location.href = 'login.html';
+                alert('Please sign in to create invoices');
+                return false;
+            }
+            
+            currentUser = user;
+            console.log('User authenticated:', user.email);
+            return true;
+        } catch (error) {
+            console.error('Error checking auth:', error);
+            return false;
+        }
+    }
+
+    // Initialize date fields - REMOVED min date restriction for issue date
+    function initializeDates() {
+        const today = new Date().toISOString().split('T')[0];
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        const nextWeekStr = nextWeek.toISOString().split('T')[0];
+        
+        document.getElementById('issueDate').value = today;
+        document.getElementById('dueDate').value = nextWeekStr;
+        // REMOVED: document.getElementById('issueDate').min = today;
+        // REMOVED: document.getElementById('dueDate').min = today;
+        
+        console.log('Dates initialized - issue date:', today, 'due date:', nextWeekStr);
+    }
+
+    // Calculate total from items
+    function calculateTotal() {
+        let subtotal = 0;
+        const itemRows = document.querySelectorAll('.item-row');
+        
+        itemRows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const total = qty * price;
+            
+            // Update row total
+            const currency = document.getElementById('currency').value;
+            const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
+            row.querySelector('.item-total').textContent = currencySymbol + total.toFixed(2);
+            subtotal += total;
+        });
+        
+        const tax = subtotal * 0.10; // 10% tax
+        const total = subtotal + tax;
+        const currency = document.getElementById('currency').value;
+        const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
+        
+        document.getElementById('subtotal').textContent = currencySymbol + subtotal.toFixed(2);
+        document.getElementById('taxAmount').textContent = currencySymbol + tax.toFixed(2);
+        document.getElementById('totalAmount').textContent = currencySymbol + total.toFixed(2);
+        
+        return total;
+    }
+
+    // Add item row
+    function addItemRow() {
+        const tableBody = document.getElementById('itemsTableBody');
+        const row = document.createElement('tr');
+        row.className = 'item-row';
+        row.innerHTML = `
+            <td><input type="text" name="itemDesc[]" placeholder="Item description"></td>
+            <td><input type="number" name="itemQty[]" value="1" min="1" class="item-qty"></td>
+            <td><input type="number" name="itemPrice[]" value="0" step="0.01" class="item-price"></td>
+            <td><span class="item-total">$0.00</span></td>
+            <td><button type="button" class="btn-icon remove-item">❌</button></td>
+        `;
+        tableBody.appendChild(row);
+        
+        // Add event listeners to new inputs
+        const inputs = row.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('input', calculateTotal);
+        });
+        
+        row.querySelector('.remove-item').addEventListener('click', function() {
+            row.remove();
+            calculateTotal();
+        });
+    }
+
+    // Function to create a new invoice
+    async function createInvoice(invoiceData) {
+        try {
+            console.log('Creating invoice for user:', currentUser.id);
+            console.log('Invoice data:', invoiceData);
+
+            // Insert into the invoices table with ALL fields
+            const { data, error } = await supabaseClient
+                .from('invoices')
+                .insert([{
+                    user_id: currentUser.id,
+                    client_name: invoiceData.clientName,
+                    amount: invoiceData.amount,
+                    due_date: invoiceData.dueDate,
+                    issue_date: invoiceData.issueDate,
+                    invoice_number: invoiceData.invoiceNumber,
+                    currency: invoiceData.currency,
+                    notes: invoiceData.notes,
+                    terms: invoiceData.terms,
+                    client_email: invoiceData.clientEmail,
+                    client_address: invoiceData.clientAddress,
+                    status: 'pending',
+                    created_at: new Date().toISOString()
+                }])
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Supabase error:', error);
+                
+                // Check if table needs to be created
+                if (error.code === '42P01') {
+                    alert('Invoices table does not exist. Please create it in Supabase.');
+                    return null;
+                }
+                
+                throw error;
+            }
+
+            console.log('Invoice created successfully:', data);
+            return data;
+
+        } catch (error) {
+            console.error('Error in createInvoice:', error);
+            throw error;
+        }
+    }
+
+    // Handle form submission
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('DOM loaded, initializing...');
+        
+        // First check authentication
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) {
+            // Disable form if not authenticated
+            document.getElementById('invoiceForm').querySelectorAll('input, select, textarea, button').forEach(el => {
+                el.disabled = true;
+            });
+            return;
+        }
+        
+        // Initialize dates
+        initializeDates();
+        
+        // Initialize calculations
+        calculateTotal();
+        
+        // Add event listeners to existing items
+        document.querySelectorAll('.item-qty, .item-price').forEach(input => {
+            input.addEventListener('input', calculateTotal);
+        });
+        
+        // Currency change listener
+        document.getElementById('currency').addEventListener('change', calculateTotal);
+        
+        // Add item button
+        document.getElementById('addItem').addEventListener('click', addItemRow);
+        
+        // Remove item buttons
+        document.querySelectorAll('.remove-item').forEach(button => {
+            button.addEventListener('click', function() {
+                this.closest('.item-row').remove();
+                calculateTotal();
+            });
+        });
+        
+        // Save draft button
+        document.getElementById('saveDraft').addEventListener('click', function() {
+            alert('Draft saved!');
+            // You can implement draft saving logic here
+        });
+        
+        // Form submission
+        const form = document.getElementById('invoiceForm');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Check auth again just in case
+            if (!currentUser) {
+                alert('Session expired. Please refresh the page and sign in again.');
+                return;
+            }
+            
+            // Calculate total amount
+            const totalAmount = calculateTotal();
+            
+            // Get form data
+            const formData = {
+                clientName: document.getElementById('clientName').value.trim(),
+                invoiceNumber: document.getElementById('invoiceNumber').value.trim(),
+                issueDate: document.getElementById('issueDate').value,
+                dueDate: document.getElementById('dueDate').value,
+                currency: document.getElementById('currency').value,
+                amount: totalAmount,
+                notes: document.getElementById('notes').value.trim(),
+                terms: document.getElementById('terms').value.trim(),
+                clientEmail: document.getElementById('clientEmail').value.trim(),
+                clientAddress: document.getElementById('clientAddress').value.trim()
+            };
+            
+            console.log('Form data collected:', formData);
+            
+            // Validate required fields
+            if (!formData.clientName || !formData.invoiceNumber || !formData.issueDate || !formData.dueDate) {
+                alert('Please fill in all required fields (Client Name, Invoice Number, Issue Date, Due Date)');
+                return;
+            }
+            
+            // Validate amount
+            if (formData.amount <= 0) {
+                alert('Please add at least one item with a positive amount');
+                return;
+            }
+            
+            // Validate dates (only warn, don't prevent)
+            const issueDate = new Date(formData.issueDate);
+            const dueDate = new Date(formData.dueDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (dueDate < issueDate) {
+                if (!confirm('Due date is before issue date. Continue anyway?')) {
+                    return;
+                }
+            }
+            
+            // Disable submit button to prevent double submission
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Invoice...';
+            
+            try {
+                const result = await createInvoice(formData);
+                
+                if (result) {
+                    alert('Invoice created successfully!');
+                    
+                    // Dispatch event to notify other pages
+                    window.dispatchEvent(new CustomEvent('invoice-created'));
+                    
+                    // Clear form
+                    form.reset();
+                    initializeDates();
+                    
+                    // Redirect to invoices page
+                    setTimeout(() => {
+                        window.location.href = 'invoices.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Form submission error:', error);
+                alert('Error creating invoice: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+        
+        console.log('Create Invoice page fully initialized');
+    });
+</script>
+</body>
+</html>

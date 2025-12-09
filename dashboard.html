@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLy | See Your Future Cash</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="dashboard.html" class="logo-link">
+                        <img src="logo.png" alt="FlowLy Logo" class="logo-img">
+                    </a>
+                    <div>
+                        <div class="tagline"> Get visibility over your cash flow </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul class="nav-links">
+                <li><a href="#" class="active">Dashboard</a></li>
+                <li><a href="invoices.html">Invoices</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="setting.html">Settings</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container main-content">
+
+
+        <!-- Add this HTML near the top of your dashboard -->
+<div id="reminderContainer" style="display: none;">
+  <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; margin-bottom: 20px; border-radius: 6px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong style="color: #92400e;">⚠️ Payment Reminders</strong>
+        <p style="margin: 8px 0 0 0; color: #78350f; font-size: 14px;" id="reminderMessage"></p>
+      </div>
+      <button onclick="document.getElementById('reminderContainer').style.display = 'none'" style="background: none; border: none; color: #92400e; cursor: pointer; font-size: 18px;">
+        ×
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Your Cash Position</h1>
+            <div class="date-range">
+                <span>Last 30 days</span>
+                <span>▼</span>
+            </div>
+        </div>
+        
+        <div class="cash-position-card">
+            <h2 class="card-title">Cash flow Overview</h2>
+            
+            <div class="current-balance">
+                <div class="balance-amount">$18750</div>
+                <div class="balance-label">Current Balance</div>
+            </div>
+            
+            <div class="current-rate">
+                <div class="burn-rate">$6350</div>
+                <div class="balance-label">Monthly burn rate</div>
+            </div>
+
+
+            <div class="forecast-timeline">
+                <div class="timeline-bar">
+                    <div class="timeline-fill"></div>
+                </div>
+                <div class="timeline-labels">
+                    <span>Today</span>
+                    <span>1 Week</span>
+                    <span>2 Weeks</span>
+                    <span>3 Weeks</span>
+                </div>
+            </div>
+            
+            <div class="forecast-insight">
+                <div class="insight-icon">!</div>
+                <div class="insight-text">
+                    In <span class="insight-highlight">3 weeks</span>, you're forecasted to have <span class="insight-highlight">~$1,200</span>.
+                </div>
+            </div>
+        </div>
+        
+        <div class="money-flow">
+            <div class="money-in">
+                <div class="section-header">
+                    <div class="section-icon">↓</div>
+                    <h2>Money In</h2>
+                </div>
+                <ul class="transaction-list">
+                    <li class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-name">Web design</div>
+                            <div class="transaction-details">Due in 7 days</div>
+                        </div>
+                        <div class="transaction-amount">$4,500</div>
+                    </li>
+                    <li class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-name">Monthly retainer</div>
+                            <div class="transaction-details">Due in 3 days</div>
+                        </div>
+                        <div class="transaction-amount">$2,800</div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="money-out">
+                <div class="section-header">
+                    <div class="section-icon">↑</div>
+                    <h2>Money Out</h2>
+                </div>
+                <ul class="transaction-list">
+                    <li class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-name">Team payroll</div>
+                            <div class="transaction-details">Due in 10 days</div>
+                        </div>
+                        <div class="transaction-amount">$8,200</div>
+                    </li>
+                    <li class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-name">Google workspace</div>
+                            <div class="transaction-details">Due in 5 days</div>
+                        </div>
+                        <div class="transaction-amount">$120</div>
+                    </li>
+                    <li class="transaction-item">
+                        <div class="transaction-info">
+                            <div class="transaction-name">AWS hosting</div>
+                            <div class="transaction-details">Due in 12 days</div>
+                        </div>
+                        <div class="transaction-amount">$380</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="quick-actions">
+    <a href="createInvoices.html" class="action-button primary">
+        <span>+</span>
+        Create New Invoice
+    </a>
+    <button class="action-button" onclick="showAddIncomeModal()">
+        <span>💰</span>
+        Add Income
+    </button>
+    <button class="action-button" onclick="showAddExpenseModal()">
+        <span>💸</span>
+        Add Expense
+    </button>
+    <a href="reports.html" class="action-button">
+        <span>📊</span>
+        View Reports
+    </a>
+    <a href="setting.html" class="action-button">
+        <span>⚙️</span>
+        Settings
+    </a>
+</div>
+    <script src="main.js"></script>
+    <!-- Add Income Modal -->
+<div id="addIncomeModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Add Income Source</h3>
+        <div class="form-group">
+            <label>Source Name</label>
+            <input type="text" id="newIncomeName" placeholder="Salary, Freelance, etc.">
+        </div>
+        <div class="form-group">
+            <label>Monthly Amount</label>
+            <input type="number" step="0.01" id="newIncomeAmount" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <select id="newIncomeType">
+                <option value="product sales">Product sales</option>
+                <option value="subscription">subscriptions</option>
+                <option value="consulting">Consulting</option>
+                <option value="retainer">Retainer</option>
+                <option value="investment">Investment</option>
+                <option value="royalties">Royalties</option>
+                <option value="loan proceeds">Loan proceeds</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary modal-cancel">Cancel</button>
+            <button class="btn-primary" onclick="addNewIncome()">Add Income</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Expense Modal -->
+<div id="addExpenseModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Add Expense</h3>
+        <div class="form-group">
+            <label>Expense Name</label>
+            <input type="text" id="newExpenseName" placeholder="Rent, Utilities, etc.">
+        </div>
+        <div class="form-group">
+            <label>Monthly Amount</label>
+            <input type="number" step="0.01" id="newExpenseAmount" placeholder="0.00">
+        </div>
+        <div class="form-group">
+            <label>Category</label>
+            <select id="newExpenseCategory">
+                <option value="salaries">Salaries & wages</option>
+                <option value="utilities">Utilities</option>
+                <option value="marketing and advertising">Marketing and advertising</option>
+                <option value="software">Software</option>
+                <option value="office supplies">Office supplies</option>
+                <option value="insurance">Insurance</option>
+                <option value="shipping and logistics">Shipping and logistics</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary modal-cancel">Cancel</button>
+            <button class="btn-primary" onclick="addNewExpense()">Add Expense</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

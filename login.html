@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowLy - Sign In</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --primary-light: #dbeafe;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+    }
+
+    * { 
+        margin: 0; 
+        padding: 0; 
+        box-sizing: border-box; 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+    }
+
+    body {
+        background: white;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .auth-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        max-width: 1000px;
+        width: 100%;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08)
+    }
+
+    .auth-hero {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 50px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .auth-content {
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Logo - Bigger */
+    .logo { 
+        display: flex; 
+        align-items: center; 
+        gap: 16px; 
+        margin-bottom: 10px; 
+        text-decoration: none;
+    }
+    .logo-img {
+        height: 200px; /* Bigger logo */
+        width: auto;
+        object-fit: contain;
+    }
+
+    .hero-title { 
+        font-size: 32px; 
+        font-weight: 700; 
+        margin-bottom: 16px; 
+        line-height: 1.2;
+    }
+    .hero-subtitle { 
+        font-size: 16px; 
+        opacity: 0.9; 
+        line-height: 1.6; 
+    }
+
+    /* Form - Smaller container */
+    .auth-form-container {
+        max-width: 350px;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .auth-title { 
+        font-size: 24px; 
+        font-weight: 700; 
+        color: var(--gray-900); 
+        margin-bottom: 8px; 
+    }
+    .auth-subtitle { 
+        color: var(--gray-600); 
+        margin-bottom: 24px; 
+        font-size: 14px;
+    }
+
+    .form-group { 
+        margin-bottom: 20px; 
+    }
+    label { 
+        display: block; 
+        margin-bottom: 8px; 
+        font-weight: 500; 
+        color: var(--gray-700);
+        font-size: 14px;
+    }
+    input {
+        width: 100%; 
+        padding: 12px; 
+        border: 1px solid var(--gray-200);
+        border-radius: 8px; 
+        font-size: 14px; 
+        transition: all 0.2s;
+        background: white;
+    }
+    input:focus { 
+        outline: none; 
+        border-color: var(--primary); 
+        box-shadow: 0 0 0 3px var(--primary-light); 
+    }
+
+    .btn {
+        width: 100%; 
+        padding: 12px; 
+        border: none; 
+        border-radius: 8px;
+        font-size: 14px; 
+        font-weight: 600; 
+        cursor: pointer; 
+        transition: all 0.2s;
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 8px;
+    }
+    .btn-primary { 
+        background: var(--primary); 
+        color: white; 
+    }
+    .btn-primary:hover { 
+        background: var(--primary-dark); 
+    }
+
+    .auth-switch { 
+        text-align: center; 
+        margin-top: 20px; 
+        color: var(--gray-600); 
+        font-size: 14px;
+    }
+    .auth-link { 
+        color: var(--primary); 
+        text-decoration: none; 
+        font-weight: 600; 
+        cursor: pointer;
+    }
+    .auth-link:hover { 
+        text-decoration: underline;
+    }
+
+    .error-message, .success-message {
+        margin-top: 12px; 
+        padding: 12px; 
+        border-radius: 8px; 
+        font-size: 13px; 
+        display: none;
+        border-left: 3px solid;
+    }
+    .error-message { 
+        background: rgba(239,68,68,0.1); 
+        color: var(--danger); 
+        border-color: var(--danger); 
+    }
+    .success-message { 
+        background: rgba(16,185,129,0.1); 
+        color: var(--success); 
+        border-color: var(--success); 
+    }
+
+    .loading-spinner {
+        width: 16px; 
+        height: 16px; 
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%; 
+        border-top-color: white; 
+        animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Simple Sign Up Section */
+    .signup-section {
+        text-align: center;
+        padding: 20px 0;
+        max-width: 350px;
+        margin: 0 auto;
+    }
+    .signup-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 12px;
+    }
+    .signup-text {
+        color: var(--gray-600);
+        margin-bottom: 20px;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+    .get-started-btn {
+        background: var(--primary);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-block;
+    }
+    .get-started-btn:hover {
+        background: var(--primary-dark);
+        text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+        .auth-container { 
+            grid-template-columns: 1fr; 
+            max-width: 400px;
+        }
+        .auth-hero, .auth-content { 
+            padding: 40px 30px; 
+        }
+        .logo-img {
+            height: 50px;
+        }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-hero">
+      <a href="index.html" class="logo">
+        <!-- Replace src with your actual logo image -->
+        <img src="logo.png" alt="FlowLy" class="logo-img">
+      </a>
+      <h1 class="hero-title">Stop Worrying About Cash Flow</h1>
+      <p class="hero-subtitle">
+        Get clarity on your financial future. FlowLy shows you exactly where your money is going and where it's coming from.
+      </p>
+    </div>
+
+    <div class="auth-content">
+      <div class="auth-form-container">
+        <!-- Login Form -->
+        <div id="loginForm">
+          <h2 class="auth-title">Sign In</h2>
+          <p class="auth-subtitle">Access your cash flow dashboard</p>
+          
+          <form id="loginFormElement">
+            <div class="form-group">
+              <label for="loginEmail">Email</label>
+              <input type="email" id="loginEmail" required placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" required placeholder="••••••••">
+            </div>
+            <div class="error-message" id="loginError"></div>
+            <div class="success-message" id="loginSuccess"></div>
+            <button type="submit" class="btn btn-primary" id="loginButton">
+              <span id="loginButtonText">Sign In</span>
+              <div class="loading-spinner" id="loginSpinner" style="display: none;"></div>
+            </button>
+          </form>
+
+          <div class="auth-switch">
+            Don't have access? 
+            <a href="#" class="auth-link" id="showSignupLink">Get started</a>
+          </div>
+        </div>
+
+        <!-- Sign Up Section - Simple Text -->
+        <div id="signupForm" style="display:none;">
+          <div class="signup-section">
+            <h3 class="signup-title">Get Started with FlowLy</h3>
+            <p class="signup-text">
+              Create your account and set up cash flow tracking in 2 minutes. Get instant visibility into your business finances.
+            </p>
+            <button onclick="location.href='onboarding.html'" class="get-started-btn">
+              Create Account
+            </button>
+          </div>
+
+          <div class="auth-switch">
+            Already have an account? 
+            <a href="#" class="auth-link" id="showLoginLink">Sign in</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Toggle between login and signup
+    document.getElementById('showSignupLink').onclick = e => {
+      e.preventDefault();
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('signupForm').style.display = 'block';
+    };
+
+    document.getElementById('showLoginLink').onclick = e => {
+      e.preventDefault();
+      document.getElementById('signupForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+    };
+
+    // Login
+    document.getElementById('loginFormElement').onsubmit = async e => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+
+      document.getElementById('loginError').style.display = 'none';
+      document.getElementById('loginSuccess').style.display = 'none';
+
+      const loginButton = document.getElementById('loginButton');
+      const loginButtonText = document.getElementById('loginButtonText');
+      const loginSpinner = document.getElementById('loginSpinner');
+      
+      loginButton.disabled = true;
+      loginButtonText.style.display = 'none';
+      loginSpinner.style.display = 'block';
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        document.getElementById('loginError').textContent = 
+          error.message.includes('Invalid') ? 'Invalid email or password' : error.message;
+        document.getElementById('loginError').style.display = 'block';
+      } else {
+        document.getElementById('loginSuccess').textContent = 'Welcome back. Redirecting...';
+        document.getElementById('loginSuccess').style.display = 'block';
+        setTimeout(() => location.href = 'dashboard.html', 1000);
+      }
+
+      loginButton.disabled = false;
+      loginButtonText.style.display = 'inline';
+      loginSpinner.style.display = 'none';
+    };
+
+    // Focus email field
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginEmail = document.getElementById('loginEmail');
+      if (loginEmail) {
+        setTimeout(() => loginEmail.focus(), 100);
+      }
+    });
+  </script>
+</body>
+</html>

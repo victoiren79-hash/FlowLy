@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLy - Invoices</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* HEADER - NON-STICKY */
+        header {
+            background: transparent;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            /* REMOVED: position: sticky; */
+            /* REMOVED: top: 0; */
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            height: 76px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+        }
+
+        /* LARGER LOGO */
+        .logo-img {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-900);
+            line-height: 1;
+        }
+
+        .tagline {
+            font-size: 12.5px;
+            color: black;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            margin-top: 1px;
+            opacity: 0.9;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* NAVIGATION - STICKY */
+        nav {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 0;
+            border-bottom: 1px solid var(--gray-100);
+            position: sticky; /* ADDED STICKY POSITION */
+            top: 0; /* STICKS TO TOP */
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            display: block;
+            padding: 16px 0;
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Optional: hide text on very small screens and keep only the logo */
+       @media (max-width: 480px) {
+    .logo-img {
+        height: 70px;
+    }
+    
+    /* REMOVE THIS MARGIN */
+    .tagline {
+        margin-top: 0; /* This is causing the weird spacing */
+    }
+}
+
+        /* Logo with max-height constraint - LARGER */
+        .logo-img {
+            height: 200px; /* Fixed height */
+            width: auto; /* Maintain aspect ratio */
+            max-width: 250px; /* Maximum width to prevent overflow */
+            object-fit: contain;
+        }
+
+        /* Responsive adjustments for larger logo */
+        @media (max-width: 768px) {
+            .logo-img {
+                height: 70px; /* Slightly smaller on tablets */
+                max-width: 200px;
+            }
+            
+            nav .logo-img {
+                height: 60px;
+                max-width: 180px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-img {
+                height: 60px; /* Smaller on phones */
+                max-width: 180px;
+            }
+            
+            nav .logo-img {
+                height: 50px;
+                max-width: 150px;
+            }
+        }
+
+        .refresh-btn {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .refresh-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 32px 0 24px 0;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .currency-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--primary-light);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-left: 16px;
+        }
+
+        .currency-flag {
+            font-size: 18px;
+        }
+
+        .invoices-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+
+        .invoices-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
+            gap: 16px;
+            padding: 20px;
+            background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            font-weight: 600;
+        }
+
+        .invoice-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
+            gap: 16px;
+            padding: 20px;
+            border-bottom: 1px solid var(--gray-100);
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .invoice-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-paid {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-pending {
+            background: var(--warning);
+            color: white;
+        }
+
+        .status-overdue {
+            background: var(--danger);
+            color: white;
+        }
+
+        .invoice-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: none;
+            border: 1px solid var(--gray-200);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+
+        .btn-icon:hover {
+            background: var(--gray-50);
+        }
+
+        .btn-delete:hover {
+            background: #fee2e2;
+            border-color: var(--danger);
+        }
+
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .dialog-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .dialog-box {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            transform: translateY(20px) scale(0.95);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+        }
+
+        .dialog-overlay.active .dialog-box {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .dialog-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dialog-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .dialog-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        .dialog-content {
+            padding: 20px 24px;
+            color: #6b7280;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+
+        .client-name {
+            color: #111827;
+            font-weight: 600;
+            background: #f3f4f6;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            border-left: 3px solid #ef4444;
+        }
+
+        .warning-text {
+            color: #ef4444;
+            font-weight: 500;
+            font-size: 14px;
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #ef4444;
+        }
+
+        .dialog-actions {
+            padding: 16px 24px 24px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .dialog-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .dialog-btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .dialog-btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .dialog-btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .dialog-btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .dialog-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+            font-weight: 500;
+            max-width: 300px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification::before {
+            content: '✓';
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .notification.error::before {
+            content: '⚠️';
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-20px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--gray-600);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .invoices-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .table-header {
+                display: none;
+            }
+            
+            .invoice-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .invoice-row > div {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .invoice-row > div::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--gray-600);
+            }
+            
+            /* Responsive navigation */
+            .nav-links {
+                gap: 16px;
+            }
+            
+            .nav-links a {
+                padding: 12px 0;
+                font-size: 14px;
+            }
+            
+            /* Adjust header height for larger logo */
+            .header-content {
+                height: 90px; /* Increased for larger logo */
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            
+            .currency-display {
+                margin-left: 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .nav-links {
+                gap: 12px;
+                justify-content: space-between;
+                width: 100%;
+            }
+            
+            .nav-links a {
+                padding: 12px 0;
+                font-size: 13px;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo">
+                    <img src="logo.png" alt="FlowLy Logo" class="logo-img">
+                    <div>
+                        <div class="tagline">Get visibility over your cash flow</div>
+                    </div>
+                </a>
+                <button class="refresh-btn" id="refreshBtn" title="Refresh invoices">
+                    ↻ Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul class="nav-links">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="invoices.html" class="active">Invoices</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="setting.html">Settings</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <div class="page-header">
+            <h1 class="page-title">Invoices</h1>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <span class="currency-display" id="currencyDisplay">
+                    <span class="currency-flag">💵</span>
+                    <span id="currentCurrency">USD</span>
+                </span>
+                <a href="createinvoices.html" class="btn-primary">
+                    <span>+</span>
+                    Create Invoice
+                </a>
+            </div>
+        </div>
+
+        <div class="invoices-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalOutstanding">$0.00</div>
+                <div class="stat-label">Total Outstanding</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="pendingCount">0</div>
+                <div class="stat-label">Pending Invoices</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="overdueCount">0</div>
+                <div class="stat-label">Overdue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="dueThisWeek">$0.00</div>
+                <div class="stat-label">Due This Week</div>
+            </div>
+        </div>
+
+        <div class="invoices-table">
+            <div class="table-header">
+                <div>Client</div>
+                <div>Amount</div>
+                <div>Due Date</div>
+                <div>Status</div>
+                <div>Days Left</div>
+                <div>Actions</div>
+            </div>
+            
+            <div id="invoicesContainer">
+                <!-- Invoices will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <div class="dialog-overlay" id="deleteDialog">
+        <div class="dialog-box">
+            <div class="dialog-header">
+                <div class="dialog-icon">🗑️</div>
+                <h3 class="dialog-title">Delete Invoice</h3>
+            </div>
+            <div class="dialog-content">
+                <p>Are you sure you want to delete the invoice for:</p>
+                <div class="client-name" id="dialogClientName">Loading...</div>
+                <div class="warning-text">⚠️ This action cannot be undone.</div>
+            </div>
+            <div class="dialog-actions">
+                <button class="dialog-btn dialog-btn-secondary" id="cancelDeleteBtn">Cancel</button>
+                <button class="dialog-btn dialog-btn-danger" id="confirmDeleteBtn">Delete Invoice</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let currentInvoices = [];
+        let deleteInvoiceId = null;
+        let deleteClientName = null;
+        let userCurrency = 'USD';
+        let userSettings = {};
+
+        // Currency symbols mapping
+        const currencySymbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'CAD': 'CA$',
+            'AUD': 'A$',
+            'JPY': '¥',
+            'CNY': '¥',
+            'INR': '₹'
+        };
+
+        // Country flags mapping for display
+        const currencyFlags = {
+            'USD': '🇺🇸',
+            'EUR': '🇪🇺',
+            'GBP': '🇬🇧',
+            'CAD': '🇨🇦',
+            'AUD': '🇦🇺',
+            'JPY': '🇯🇵',
+            'CNY': '🇨🇳',
+            'INR': '🇮🇳'
+        };
+
+        async function checkAuth() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error || !session) {
+                window.location.href = 'index.html';
+                return null;
+            }
+            return session;
+        }
+
+        function showNotification(message, type = 'success') {
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function formatCurrency(amount, currency = null) {
+            // Use user's currency if not specified for the invoice
+            const displayCurrency = currency || userCurrency;
+            const symbol = currencySymbols[displayCurrency] || '$';
+            
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: displayCurrency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount || 0);
+        }
+
+        function updateCurrencyDisplay() {
+            const currencyElement = document.getElementById('currentCurrency');
+            const flagElement = document.querySelector('.currency-flag');
+            
+            currencyElement.textContent = userCurrency;
+            flagElement.textContent = currencyFlags[userCurrency] || '💵';
+        }
+
+        async function loadUserSettings() {
+            try {
+                const session = await checkAuth();
+                if (!session) return;
+
+                // First try to get from user_profiles table
+                const { data: profile, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('currency')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (!profileError && profile?.currency) {
+                    userCurrency = profile.currency;
+                    userSettings.currency = profile.currency;
+                } else {
+                    // Fall back to auth metadata
+                    const { data: { user } } = await supabase.auth.getUser();
+                    userCurrency = user?.user_metadata?.currency || 'USD';
+                    userSettings.currency = userCurrency;
+                }
+
+                updateCurrencyDisplay();
+                
+            } catch (error) {
+                console.error('Error loading user settings:', error);
+                userCurrency = 'USD';
+                updateCurrencyDisplay();
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+        }
+
+        function calculateDaysLeft(dueDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const due = new Date(dueDate);
+            due.setHours(0, 0, 0, 0);
+            
+            const diffTime = due - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
+            if (diffDays === 0) return 'Today';
+            return `in ${diffDays} days`;
+        }
+
+        function getInvoiceStatus(invoice) {
+            if (invoice.status === 'paid') return 'paid';
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dueDate = new Date(invoice.due_date);
+            dueDate.setHours(0, 0, 0, 0);
+            
+            if (dueDate < today) return 'overdue';
+            return 'pending';
+        }
+
+        function updateStats(invoices) {
+            const pending = invoices.filter(inv => getInvoiceStatus(inv) === 'pending');
+            const overdue = invoices.filter(inv => getInvoiceStatus(inv) === 'overdue');
+            
+            const totalOutstanding = [...pending, ...overdue]
+                .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
+            
+            const today = new Date();
+            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const dueThisWeek = pending.filter(inv => {
+                const dueDate = new Date(inv.due_date);
+                return dueDate >= today && dueDate <= nextWeek;
+            }).reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
+
+            // Format all amounts with user's currency
+            document.getElementById('totalOutstanding').textContent = formatCurrency(totalOutstanding);
+            document.getElementById('pendingCount').textContent = pending.length;
+            document.getElementById('overdueCount').textContent = overdue.length;
+            document.getElementById('dueThisWeek').textContent = formatCurrency(dueThisWeek);
+        }
+
+        function displayInvoices(invoices) {
+            const container = document.getElementById('invoicesContainer');
+            container.innerHTML = '';
+
+            if (invoices.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📄</div>
+                        <div class="empty-state-text">No invoices yet</div>
+                        <div style="color: var(--gray-500); font-size: 14px;">Click "Create Invoice" to get started</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const sorted = [...invoices].sort((a, b) => {
+                const statusA = getInvoiceStatus(a);
+                const statusB = getInvoiceStatus(b);
+                
+                if (statusA === 'overdue' && statusB !== 'overdue') return -1;
+                if (statusB === 'overdue' && statusA !== 'overdue') return 1;
+                
+                return new Date(a.due_date) - new Date(b.due_date);
+            });
+
+            sorted.forEach(invoice => {
+                const status = getInvoiceStatus(invoice);
+                // Use invoice currency if available, otherwise use user's currency
+                const invoiceCurrency = invoice.currency || userCurrency;
+                const row = document.createElement('div');
+                row.className = 'invoice-row';
+                row.style.animation = 'fadeIn 0.3s ease';
+                row.innerHTML = `
+                    <div data-label="Client">${invoice.client_name}</div>
+                    <div data-label="Amount">${formatCurrency(invoice.amount, invoiceCurrency)}</div>
+                    <div data-label="Due Date">${formatDate(invoice.due_date)}</div>
+                    <div data-label="Status">
+                        <span class="status-badge status-${status}">
+                            ${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </span>
+                    </div>
+                    <div data-label="Days Left">${calculateDaysLeft(invoice.due_date)}</div>
+                    <div data-label="Actions" class="invoice-actions">
+                        <button class="btn-icon btn-delete" 
+                                onclick="showDeleteDialog('${invoice.id}', '${invoice.client_name}')"
+                                title="Delete Invoice">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        async function loadInvoices() {
+            try {
+                const refreshBtn = document.getElementById('refreshBtn');
+                refreshBtn.classList.add('loading');
+                refreshBtn.textContent = 'Loading...';
+
+                const session = await checkAuth();
+                if (!session) return;
+
+                const { data, error } = await supabase
+                    .from('invoices')
+                    .select('*')
+                    .eq('user_id', session.user.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                currentInvoices = data || [];
+                displayInvoices(currentInvoices);
+                updateStats(currentInvoices);
+
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+                showNotification('Error loading invoices', 'error');
+            } finally {
+                const refreshBtn = document.getElementById('refreshBtn');
+                refreshBtn.classList.remove('loading');
+                refreshBtn.textContent = '↻ Refresh';
+            }
+        }
+
+        function showDeleteDialog(invoiceId, clientName) {
+            deleteInvoiceId = invoiceId;
+            deleteClientName = clientName;
+            document.getElementById('dialogClientName').textContent = clientName;
+            document.getElementById('deleteDialog').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideDeleteDialog() {
+            document.getElementById('deleteDialog').classList.remove('active');
+            document.body.style.overflow = '';
+            deleteInvoiceId = null;
+            deleteClientName = null;
+        }
+
+        async function performDelete() {
+            if (!deleteInvoiceId) return;
+
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Deleting...';
+
+            try {
+                const session = await checkAuth();
+                if (!session) return;
+
+                const { error } = await supabase
+                    .from('invoices')
+                    .delete()
+                    .eq('id', deleteInvoiceId)
+                    .eq('user_id', session.user.id);
+
+                if (error) throw error;
+
+                showNotification(`Invoice for "${deleteClientName}" deleted successfully!`);
+                hideDeleteDialog();
+                await loadInvoices();
+
+            } catch (error) {
+                console.error('Error deleting invoice:', error);
+                showNotification('Error deleting invoice', 'error');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = 'Delete Invoice';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const session = await checkAuth();
+            if (!session) return;
+
+            // Load user settings first (including currency)
+            await loadUserSettings();
+            
+            // Then load invoices
+            await loadInvoices();
+
+            document.getElementById('refreshBtn').addEventListener('click', loadInvoices);
+            document.getElementById('cancelDeleteBtn').addEventListener('click', hideDeleteDialog);
+            document.getElementById('confirmDeleteBtn').addEventListener('click', performDelete);
+            
+            document.getElementById('deleteDialog').addEventListener('click', (e) => {
+                if (e.target.id === 'deleteDialog') hideDeleteDialog();
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') hideDeleteDialog();
+            });
+
+            // Listen for new invoices
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'invoice-created') {
+                    loadInvoices();
+                    showNotification('New invoice added!');
+                }
+            });
+
+            // Listen for currency changes from settings
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'currency-changed') {
+                    loadUserSettings();
+                    // Refresh invoices to update currency display
+                    loadInvoices();
+                    showNotification('Currency settings updated!');
+                }
+            });
+
+            // Realtime subscription for invoices
+            supabase
+                .channel('invoices-channel')
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'invoices',
+                        filter: `user_id=eq.${session.user.id}`
+                    }, 
+                    () => {
+                        loadInvoices();
+                    }
+                )
+                .subscribe();
+
+            // Realtime subscription for user settings (to detect currency changes)
+            supabase
+                .channel('user-settings-channel')
+                .on('postgres_changes', 
+                    { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'user_profiles',
+                        filter: `id=eq.${session.user.id}`
+                    }, 
+                    async (payload) => {
+                        if (payload.new.currency && payload.new.currency !== userCurrency) {
+                            userCurrency = payload.new.currency;
+                            updateCurrencyDisplay();
+                            // Refresh the display
+                            updateStats(currentInvoices);
+                            displayInvoices(currentInvoices);
+                            showNotification('Currency updated to ' + userCurrency);
+                        }
+                    }
+                )
+                .subscribe();
+        });
+    </script>
+</body>
+</html>

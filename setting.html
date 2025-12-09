@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLy - Settings</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* HEADER - EXACT SAME AS REPORTS PAGE */
+        header {
+            background: transparent;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            height: 76px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+        }
+
+        .logo-img {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-900);
+            line-height: 1;
+        }
+
+        .tagline {
+            font-size: 12.5px;
+            color: black;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            margin-top: 1px;
+            opacity: 0.9;
+        }
+
+        /* NAVIGATION - EXACT SAME AS REPORTS PAGE */
+        nav {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 0;
+            border-bottom: 1px solid var(--gray-100);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            display: block;
+            padding: 16px 0;
+            text-decoration: none;
+            color: var(--gray-600);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .currency-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--gray-100);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .logout-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        /* Logo with max-height constraint - EXACT SAME AS REPORTS PAGE */
+        .logo-img {
+            height: 200px;
+            width: auto;
+            max-width: 250px;
+            object-fit: contain;
+        }
+
+        @media (max-width: 768px) {
+            .logo-img {
+                height: 70px;
+                max-width: 200px;
+            }
+            
+            nav .logo-img {
+                height: 60px;
+                max-width: 180px;
+            }
+            
+            .header-content {
+                height: 85px;
+            }
+
+            .nav-links {
+                gap: 16px;
+                overflow-x: auto;
+                padding: 8px 0;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .nav-links a {
+                padding: 12px 0;
+                font-size: 14px;
+                white-space: nowrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-text,
+            .tagline {
+                display: none;
+            }
+            .logo-img {
+                height: 70px;
+                max-width: 180px;
+            }
+            
+            nav .logo-img {
+                height: 50px;
+                max-width: 150px;
+            }
+
+            .tagline {
+                margin-top: 0;
+            }
+
+            .nav-links {
+                gap: 12px;
+            }
+            
+            .nav-links a {
+                font-size: 13px;
+                padding: 10px 0;
+            }
+        }
+
+        /* KEEP YOUR EXISTING SETTINGS PAGE STYLES BELOW - DON'T CHANGE THESE */
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 32px 0 0 0;
+        }
+        
+        .settings-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 32px;
+            margin: 32px 0;
+        }
+
+        .settings-sidebar {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 0;
+            height: fit-content;
+            
+            top: 100px;
+        }
+
+        .settings-nav {
+            list-style: none;
+        }
+
+        .settings-nav li {
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .settings-nav li:last-child {
+            border-bottom: none;
+        }
+
+        .settings-nav a {
+            display: block;
+            padding: 16px 20px;
+            text-decoration: none;
+            color: var(--gray-700);
+            transition: all 0.2s;
+        }
+
+        .settings-nav a:hover {
+            background: var(--gray-50);
+        }
+
+        .settings-nav a.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-right: 3px solid var(--primary);
+        }
+
+        .settings-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 32px;
+        }
+
+        .settings-section {
+            margin-bottom: 40px;
+        }
+
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-header {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .section-description {
+            color: var(--gray-600);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            background-color: white;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        input[readonly] {
+            background-color: var(--gray-50);
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .notification-category {
+            margin-bottom: 32px;
+            padding: 24px;
+            background: var(--gray-50);
+            border-radius: 12px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .notification-category h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notification-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-info {
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        .notification-info h4 {
+            margin: 0 0 6px 0;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--gray-900);
+        }
+
+        .notification-info p {
+            margin: 0;
+            color: var(--gray-600);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .notification-controls {
+            display: flex;
+            align-items: center;
+        }
+
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray-300);
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: var(--primary);
+        }
+
+        .help-text {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin: 2px 0 0 30px;
+            line-height: 1.4;
+        }
+
+        .danger-zone {
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 24px;
+            background: #fef2f2;
+        }
+
+        .danger-zone .section-title {
+            color: var(--danger);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        @media (max-width: 768px) {
+            .settings-container {
+                grid-template-columns: 1fr;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER - EXACT SAME HTML AS REPORTS PAGE -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="dashboard.html" class="logo">
+                    <img src="logo.png" alt="FlowLy Logo" class="logo-img">
+                    <div>
+                        <div class="tagline">Get visibility over your cash flow</div>
+                    </div>
+                </a>
+                <div class="user-menu">
+                    <div class="user-avatar" id="userAvatar">Fly</div>
+                    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- NAVIGATION - EXACT SAME HTML AS REPORTS PAGE -->
+    <nav>
+        <div class="container">
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="dashboard.html">Dashboard</a></li>
+                    <li><a href="invoices.html">Invoices</a></li>
+                    <li><a href="reports.html">Reports</a></li>
+                    <li><a href="setting.html" class="active">Settings</a></li>
+                </ul>
+                <div class="currency-selector" id="navCurrencyDisplay">
+                    <span class="currency-flag" id="navCurrencyFlag">🇪🇺</span>
+                    <span id="navCurrentCurrency">EUR</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- YOUR EXISTING SETTINGS PAGE CONTENT -->
+    <main class="container">
+        <h1 class="page-title">Settings</h1>
+        
+        <div class="settings-container">
+            <div class="settings-sidebar">
+                <ul class="settings-nav">
+                    <li><a href="#profile" class="active">Profile</a></li>
+                    <li><a href="#company">Company</a></li>
+                    <li><a href="#notifications">Notifications</a></li>
+                </ul>
+            </div>
+
+            <div class="settings-content">
+                <div id="alertContainer"></div>
+
+                <div class="settings-section" id="profile">
+                    <div class="section-header">
+                        <h2 class="section-title">Profile Settings</h2>
+                        <p class="section-description">Manage your personal information and preferences</p>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" placeholder="John Smith" id="fullName">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" placeholder="john@example.com" id="email" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" placeholder="+1 (555) 123-4567">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
+                    </div>
+                </div>
+
+                <div class="settings-section" id="company">
+                    <div class="section-header">
+                        <h2 class="section-title">Company Information</h2>
+                        <p class="section-description">Your business details for invoicing and reporting</p>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="companyName">Company Name</label>
+                            <input type="text" id="companyName" placeholder="Acme Inc.">
+                        </div>
+                        <div class="form-group">
+                            <label for="currency">Default Currency</label>
+                            <select id="currency">
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="CAD">CAD ($)</option>
+                                <option value="AUD">AUD ($)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="timezone">Timezone</label>
+                            <select id="timezone">
+                                <option value="UTC-5">Eastern Time (ET)</option>
+                                <option value="UTC-6">Central Time (CT)</option>
+                                <option value="UTC-8">Pacific Time (PT)</option>
+                                <option value="UTC">UTC/GMT</option>
+                                <option value="UTC+1">Central European Time (CET)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn-primary" onclick="saveCompany()">Save Company Details</button>
+                    </div>
+                </div>
+
+                <div class="settings-section" id="notifications">
+                    <div class="section-header">
+                        <h2 class="section-title">Notification Preferences</h2>
+                        <p class="section-description">Control how and when you receive alerts</p>
+                    </div>
+                    
+                    <div class="notification-category">
+                        <h3>Cash Flow Alerts</h3>
+                        <div class="notification-item">
+                            <div class="notification-info">
+                                <h4>Low Balance Warning</h4>
+                                <p>Get notified when your balance drops below a threshold</p>
+                            </div>
+                            <div class="notification-controls">
+                                <label class="toggle">
+                                    <input type="checkbox" id="notif_low_balance">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-item">
+                            <div class="notification-info">
+                                <h4>Projected Shortfall</h4>
+                                <p>Alert when cash flow forecast shows potential issues</p>
+                            </div>
+                            <div class="notification-controls">
+                                <label class="toggle">
+                                    <input type="checkbox" id="notif_shortfall">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="notification-category">
+                        <h3>Delivery Methods</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="delivery_email">
+                                    <span>Email Notifications</span>
+                                </label>
+                                <p class="help-text">Send notifications to your email address. <strong>Note:</strong> Email functions on other pages will only work when this is enabled.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn-primary" onclick="saveNotifications()">Save Notification Settings</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="danger-zone">
+                        <div class="section-header">
+                            <h2 class="section-title">Danger Zone</h2>
+                            <p class="section-description">Irreversible and destructive actions</p>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label>Delete Account</label>
+                            <p style="margin: 8px 0; color: var(--gray-600);">
+                                Permanently delete your account and all associated data. This action cannot be undone.
+                            </p>
+                            <button class="btn-secondary" style="background: var(--danger); color: white; margin-top: 12px;" onclick="deleteAccount()">
+                                Delete My Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Supabase
+        const supabaseUrl = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+        const supabaseKey = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+        let currentUser = null;
+        let userSettings = {};
+
+        // Currency flags mapping
+        const currencyFlags = {
+            'USD': '🇺🇸',
+            'EUR': '🇪🇺',
+            'GBP': '🇬🇧',
+            'CAD': '🇨🇦',
+            'AUD': '🇦🇺',
+            'JPY': '🇯🇵',
+            'CNY': '🇨🇳',
+            'INR': '🇮🇳'
+        };
+
+        // Update currency display
+        function updateCurrencyDisplay(currency) {
+            const navCurrencyElement = document.getElementById('navCurrentCurrency');
+            const navFlagElement = document.getElementById('navCurrencyFlag');
+            
+            if (navCurrencyElement && currency) {
+                navCurrencyElement.textContent = currency;
+            }
+            if (navFlagElement && currency) {
+                navFlagElement.textContent = currencyFlags[currency] || '💵';
+            }
+        }
+
+        // Alert function
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertContainer.innerHTML = '';
+            alertContainer.appendChild(alert);
+            setTimeout(() => alert.remove(), 5000);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Check if email notifications are enabled (to be called from other pages)
+        function isEmailEnabled() {
+            return userSettings.notifications?.delivery_email === true;
+        }
+
+        // Get notification settings (to be called from other pages)
+        function getNotificationSettings() {
+            return userSettings.notifications || {};
+        }
+
+        // Initialize database schema if needed
+        async function initializeDatabase() {
+            try {
+                // Check if user_profiles table exists, if not we'll use auth metadata only
+                const { error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('id')
+                    .limit(1);
+                    
+                if (error && error.code === '42P01') { // Table doesn't exist
+                    console.warn('user_profiles table does not exist. Using auth metadata only.');
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                console.warn('Could not check table existence:', err);
+                return false;
+            }
+        }
+
+        // Load user data from database
+        async function loadUserData() {
+            try {
+                const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+                
+                if (userError || !user) {
+                    console.error('No active session');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                currentUser = user;
+                
+                // Try to load from user_profiles table
+                const tableExists = await initializeDatabase();
+                let profileData = null;
+                
+                if (tableExists) {
+                    const { data: profile, error: profileError } = await supabaseClient
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (!profileError && profile) {
+                        profileData = profile;
+                    }
+                }
+                
+                // Populate form fields with database data or fallback to auth metadata
+                const fullName = profileData?.full_name || user.user_metadata.full_name || '';
+                const email = user.email || '';
+                const phone = profileData?.phone || user.user_metadata.phone || '';
+                const companyName = profileData?.company_name || user.user_metadata.company || '';
+                const currency = profileData?.currency || user.user_metadata.currency || 'EUR'; // Changed default to EUR
+                const timezone = profileData?.timezone || user.user_metadata.timezone || 'UTC-5';
+
+                const initials = (fullName || email || 'U').substring(0, 2).toUpperCase();
+                document.getElementById('userAvatar').textContent = initials;
+                document.getElementById('fullName').value = fullName;
+                document.getElementById('email').value = email;
+                document.getElementById('phone').value = phone;
+                document.getElementById('companyName').value = companyName;
+                document.getElementById('currency').value = currency;
+                document.getElementById('timezone').value = timezone;
+                
+                // Update currency display in header
+                updateCurrencyDisplay(currency);
+                
+                // Load notifications from profile or metadata
+                let notifications = {};
+                if (profileData?.notifications) {
+                    notifications = profileData.notifications;
+                } else if (user.user_metadata.notifications) {
+                    notifications = user.user_metadata.notifications;
+                } else {
+                    // Default settings
+                    notifications = {
+                        low_balance: true,
+                        shortfall: true,
+                        delivery_email: true
+                    };
+                }
+                
+                userSettings = {
+                    ...profileData,
+                    notifications: notifications
+                };
+                
+                loadNotifications(notifications);
+                
+            } catch (err) {
+                console.error('Error loading user:', err);
+                showAlert('Error loading your data. Please refresh the page.', 'error');
+            }
+        }
+
+        // Save profile to database
+        async function saveProfile() {
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) throw new Error('No user found');
+
+                const fullName = document.getElementById('fullName').value;
+                const phone = document.getElementById('phone').value;
+
+                const tableExists = await initializeDatabase();
+                const updates = {
+                    full_name: fullName,
+                    phone: phone,
+                    updated_at: new Date().toISOString()
+                };
+
+                if (tableExists) {
+                    // Update in user_profiles table
+                    const { error } = await supabaseClient
+                        .from('user_profiles')
+                        .upsert({
+                            id: user.id,
+                            ...updates
+                        });
+
+                    if (error) throw error;
+                }
+
+                // Always update auth metadata
+                await supabaseClient.auth.updateUser({
+                    data: { 
+                        full_name: fullName, 
+                        phone: phone 
+                    }
+                });
+
+                showAlert('Profile updated successfully!');
+                
+                // Update avatar
+                const initials = (fullName || user.email || 'U').substring(0, 2).toUpperCase();
+                document.getElementById('userAvatar').textContent = initials;
+                
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showAlert('Error updating profile: ' + error.message, 'error');
+            }
+        }
+
+        // Save company info to database
+        async function saveCompany() {
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) throw new Error('No user found');
+
+                const companyName = document.getElementById('companyName').value;
+                const currency = document.getElementById('currency').value;
+                const timezone = document.getElementById('timezone').value;
+
+                const tableExists = await initializeDatabase();
+                const updates = {
+                    company_name: companyName,
+                    currency: currency,
+                    timezone: timezone,
+                    updated_at: new Date().toISOString()
+                };
+
+                if (tableExists) {
+                    // Update in user_profiles table
+                    const { error } = await supabaseClient
+                        .from('user_profiles')
+                        .upsert({
+                            id: user.id,
+                            ...updates
+                        });
+
+                    if (error) throw error;
+                }
+
+                // Always update auth metadata
+                await supabaseClient.auth.updateUser({
+                    data: { 
+                        company: companyName, 
+                        currency: currency, 
+                        timezone: timezone 
+                    }
+                });
+
+                // Update currency display in header
+                updateCurrencyDisplay(currency);
+                
+                // Store currency change in localStorage for other pages
+                localStorage.setItem('currency-changed', Date.now().toString());
+                
+                showAlert('Company information updated successfully!');
+                
+            } catch (error) {
+                console.error('Error updating company info:', error);
+                showAlert('Error updating company info: ' + error.message, 'error');
+            }
+        }
+
+        // Save notifications to database
+        async function saveNotifications() {
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (!user) throw new Error('No user found');
+
+                const notifications = {
+                    low_balance: document.getElementById('notif_low_balance').checked,
+                    shortfall: document.getElementById('notif_shortfall').checked,
+                    delivery_email: document.getElementById('delivery_email').checked
+                };
+
+                userSettings.notifications = notifications;
+
+                const tableExists = await initializeDatabase();
+                
+                if (tableExists) {
+                    // Update in user_profiles table
+                    const { error } = await supabaseClient
+                        .from('user_profiles')
+                        .upsert({
+                            id: user.id,
+                            notifications: notifications,
+                            updated_at: new Date().toISOString()
+                        });
+
+                    if (error) throw error;
+                }
+
+                // Always update auth metadata
+                await supabaseClient.auth.updateUser({
+                    data: { notifications: notifications }
+                });
+
+                showAlert('Notification preferences saved successfully!');
+                
+            } catch (error) {
+                console.error('Error updating notifications:', error);
+                showAlert('Error updating notifications: ' + error.message, 'error');
+            }
+        }
+
+        // Load notifications
+        function loadNotifications(notifications) {
+            if (!notifications) {
+                // Set defaults
+                notifications = {
+                    low_balance: true,
+                    shortfall: true,
+                    delivery_email: true
+                };
+            }
+            
+            document.getElementById('notif_low_balance').checked = notifications.low_balance !== false;
+            document.getElementById('notif_shortfall').checked = notifications.shortfall !== false;
+            document.getElementById('delivery_email').checked = notifications.delivery_email !== false;
+        }
+
+        // Logout function
+        async function handleLogout() {
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) {
+                showAlert('Error logging out: ' + error.message, 'error');
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Delete account function
+        async function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+                    try {
+                        const tableExists = await initializeDatabase();
+                        
+                        if (tableExists) {
+                            // Delete from user_profiles table
+                            const { error: profileError } = await supabaseClient
+                                .from('user_profiles')
+                                .delete()
+                                .eq('id', currentUser.id);
+                                
+                            if (profileError) {
+                                console.error('Error deleting profile:', profileError);
+                            }
+                        }
+                        
+                        // Delete the auth user
+                        const { error: authError } = await supabaseClient.auth.admin.deleteUser(currentUser.id);
+                        
+                        if (authError) {
+                            throw authError;
+                        }
+                        
+                        showAlert('Account deleted successfully. You will be logged out.', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 2000);
+                        
+                    } catch (error) {
+                        console.error('Error deleting account:', error);
+                        showAlert('Error deleting account: ' + error.message, 'error');
+                    }
+                }
+            }
+        }
+
+        // Setup auto-save
+        let saveTimeout;
+        function setupAutoSave() {
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        const activeSection = document.querySelector('.settings-nav a.active')?.getAttribute('href');
+                        if (activeSection === '#profile') saveProfile();
+                        if (activeSection === '#company') saveCompany();
+                        if (activeSection === '#notifications') saveNotifications();
+                    }, 2000);
+                });
+            });
+        }
+
+        // Auth state listener
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT' || !session) {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Initialize settings page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+            setupAutoSave();
+            
+            // Navigation click handlers
+            document.querySelectorAll('.settings-nav a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelectorAll('.settings-nav a').forEach(a => a.classList.remove('active'));
+                    this.classList.add('active');
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    if (targetSection) {
+                        targetSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

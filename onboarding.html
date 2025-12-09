@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLy - Complete Setup & Payment</title>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Lemon Squeezy Checkout -->
+    <script src="https://app.lemonsqueezy.com/js/checkout.js" defer></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+       
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+       
+        body {
+            background-color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+       
+        .onboarding-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+            border: 1px solid var(--gray-200);
+        }
+       
+        .onboarding-header {
+            background: var(--primary);
+            color: white;
+            padding: 32px 40px;
+            text-align: center;
+        }
+       
+        .onboarding-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .onboarding-header p { opacity: 0.9; font-size: 15px; }
+       
+        .onboarding-progress {
+            display: flex;
+            justify-content: center;
+            padding: 16px 40px;
+            background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+        }
+       
+        .progress-step {
+            display: flex;
+            align-items: center;
+            margin: 0 12px;
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+       
+        .progress-step.active { color: var(--primary); font-weight: 600; }
+        .progress-step .step-number {
+            width: 26px; height: 26px; border-radius: 50%; background: var(--gray-200);
+            display: flex; align-items: center; justify-content: center; margin-right: 8px;
+            font-size: 13px; font-weight: 600;
+        }
+        .progress-step.active .step-number { background: var(--primary); color: white; }
+       
+        .onboarding-content { padding: 32px 40px; }
+        .form-section { display: none; }
+        .form-section.active { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+       
+        .section-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: var(--gray-900); }
+        .section-description { color: var(--gray-600); margin-bottom: 24px; font-size: 14px; line-height: 1.5; }
+       
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group.full-width { grid-column: 1 / -1; }
+       
+        label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--gray-700); font-size: 13px; }
+        input, select, textarea {
+            width: 100%; padding: 12px 14px; border: 1px solid var(--gray-200);
+            border-radius: 8px; font-size: 15px; transition: all 0.2s; background: white;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light);
+        }
+       
+        .currency-input { position: relative; }
+        .currency-input input { padding-left: 40px; }
+        .currency-symbol {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--gray-600); font-weight: 600; font-size: 15px;
+        }
+       
+        .income-source, .expense-item, .invoice-item {
+            background: var(--gray-50); padding: 18px; border-radius: 10px;
+            margin-bottom: 14px; border: 1px solid var(--gray-200);
+        }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .item-title { font-weight: 600; color: var(--gray-900); font-size: 15px; }
+        .remove-btn {
+            background: var(--danger); color: white; border: none; padding: 6px 12px;
+            border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+        }
+       
+        .add-btn {
+            background: var(--primary); color: white; border: none; padding: 12px 24px;
+            border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+       
+        .form-actions {
+            display: flex; justify-content: space-between; margin-top: 40px;
+            padding-top: 24px; border-top: 1px solid var(--gray-200);
+        }
+       
+        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 14px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-secondary { background: var(--gray-200); color: var(--gray-700); }
+        .btn-secondary:hover { background: var(--gray-300); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+       
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+       
+        .payment-card {
+            background: white; padding: 32px; border-radius: 16px; margin: 32px 0;
+            border: 2px solid var(--primary); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.1);
+            text-align: center;
+        }
+        .payment-price { font-size: 42px; font-weight: 800; margin: 16px 0; color: var(--primary); }
+        .lemon-checkout-btn {
+            background: var(--primary); color: white; border: none; padding: 16px 40px;
+            font-size: 17px; font-weight: 600; border-radius: 10px; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 12px; margin-top: 12px;
+            width: 100%; max-width: 320px; justify-content: center;
+        }
+        .lemon-checkout-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
+        .lemon-checkout-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+       
+        .payment-processing { display: none; margin: 24px 0; }
+        .payment-processing.active { display: block; }
+        .spinner {
+            width: 36px; height: 36px; border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+       
+        .setup-complete-message { text-align: center; padding: 40px 20px; }
+        .required-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+       
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .onboarding-content { padding: 24px; }
+            .onboarding-header { padding: 28px 24px; }
+            .payment-price { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-container">
+        <div class="onboarding-header">
+            <h1>Welcome to FlowLy</h1>
+            <p>Set up your cash flow dashboard and unlock full access</p>
+        </div>
+       
+        <div class="onboarding-progress">
+            <div class="progress-step active"><div class="step-number">1</div><span>Basic Info</span></div>
+            <div class="progress-step"><div class="step-number">2</div><span>Income & Expenses</span></div>
+            <div class="progress-step"><div class="step-number">3</div><span>Invoices</span></div>
+            <div class="progress-step"><div class="step-number">4</div><span>Payment</div>
+        </div>
+       
+        <div class="onboarding-content">
+            <div id="alertContainer"></div>
+
+            <!-- Section 1: Email + Basic Info -->
+            <div class="form-section active" id="section-basic">
+                <h2 class="section-title">Your Email & Financial Snapshot</h2>
+                <br>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="fullName">Full Name <span style="color: var(--danger);">*</span></label>
+                        <input type="text" id="fullName" placeholder="John Smith" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Email Address <span style="color: var(--danger);">*</span></label>
+                        <input type="email" id="userEmail" placeholder="you@example.com" required>
+                    </div>
+                </div>
+
+                <p style="font-size: 13px; color: var(--gray-600); margin-bottom: 24px;">
+                    We'll only create your account after you pay
+                </p>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="currentBalance">Current Balance</label>
+                        <div class="currency-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" step="0.01" id="currentBalance" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="currency">Currency</label>
+                        <select id="currency" required>
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (Euro)</option>
+                            <option value="GBP">GBP (Pound)</option>
+                            <option value="CAD">CAD ($)</option>
+                            <option value="AUD">AUD ($)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Income & Expenses -->
+            <div class="form-section" id="section-cashflow">
+                <h2 class="section-title">Income & Expenses</h2>
+                <p class="section-description">Add your regular income sources and monthly expenses</p>
+                <h3 style="margin-bottom: 12px; color: var(--gray-800); font-size: 15px;">Income Sources</h3>
+                <div id="incomeSources">
+                    <div class="income-source">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Source Name</label><input type="text" class="income-name" placeholder="Product sales etc." required></div>
+                            <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="income-amount" placeholder="0.00" required></div></div>
+                            <div class="form-group"><label>Type</label><select class="income-type"><option value="salary">Salary</option><option value="freelance">Freelance</option><option value="investment">Investment</option><option value="rental">Rental</option><option value="other">Other</option></select></div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add-btn" onclick="addIncomeSource()">+ Add Income Source</button>
+
+                <h3 style="margin: 24px 0 12px; color: var(--gray-800); font-size: 15px;">Regular Expenses</h3>
+                <div id="expenseItems">
+                    <div class="expense-item">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Expense Name</label><input type="text" class="expense-name" placeholder="Subscriptions, etc." required></div>
+                            <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="expense-amount" placeholder="0.00" required></div></div>
+                            <div class="form-group"><label>Category</label><select class="expense-category"><option value="housing">Housing</option><option value="utilities">Utilities</option><option value="food">Food & Dining</option><option value="transportation">Transportation</option><option value="entertainment">Entertainment</option><option value="business">Business</option><option value="other">Other</option></select></div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add-btn" onclick="addExpenseItem()">+ Add Expense</button>
+            </div>
+
+            <!-- Section 3: Invoices -->
+            <div class="form-section" id="section-invoices">
+                <h2 class="section-title">Outstanding Invoices</h2>
+                <p class="section-description">Add any invoices you're waiting to be paid</p>
+                <div id="invoiceItems">
+                    <div class="invoice-item">
+                        <div class="form-grid">
+                            <div class="form-group"><label>Invoice #</label><input type="text" class="invoice-number" placeholder="INV-001" required></div>
+                            <div class="form-group"><label>Client Name</label><input type="text" class="invoice-client" placeholder="Client Company" required></div>
+                            <div class="form-group"><label>Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="invoice-amount" placeholder="0.00" required></div></div>
+                            <div class="form-group"><label>Due Date</label><input type="date" class="invoice-due-date" required></div>
+                            <div class="form-group full-width"><label>Description</label><textarea class="invoice-description" rows="2"></textarea></div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="add-btn" onclick="addInvoiceItem()">+ Add Invoice</button>
+            </div>
+
+            <!-- Section 4: Payment -->
+            <div class="form-section payment-section" id="section-payment">
+                <h2 class="section-title">Unlock FlowLy – Lifetime Access</h2>
+                <p class="section-description">One-time payment • Full access forever</p>
+                
+                <div class="payment-card">
+                    <h3>FlowLy Pro – Lifetime</h3>
+                    <div class="payment-price">$29</div>
+                    <p style="color: var(--gray-600); margin: 16px 0;">One-time payment • No subscriptions</p>
+
+                    <button id="checkout-btn" class="lemon-checkout-btn">
+                        Get FlowLy Now – $29
+                    </button>
+
+                    <div id="payment-processing" class="payment-processing">
+                        <div class="spinner"></div>
+                        <p>Opening secure checkout...</p>
+                    </div>
+                </div>
+
+                <div style="font-size: 13px; color: var(--gray-600); margin-top: 20px;">
+                    30-day money-back guarantee • Secure payment by Lemon Squeezy
+                </div>
+            </div>
+
+            <!-- Success -->
+            <div class="form-section setup-complete-message" id="section-success" style="display: none;">
+                <h2 style="color: var(--success);">Setup Complete!</h2>
+                <p>Your account has been created and activated!<br>Redirecting to your dashboard...</p>
+                <div class="spinner"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="prevBtn" onclick="previousSection()" disabled>Previous</button>
+                <button type="button" class="btn btn-primary" id="nextBtn" onclick="nextSection()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====== CONFIGURATION - CHANGE THESE ======
+        const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+        const LEMONSQUEEZY_STORE_ID = 'YOUR_STORE_ID';        // ← CHANGE
+        const LEMONSQUEEZY_VARIANT_ID = 'YOUR_VARIANT_ID';    // ← CHANGE
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentSection = 1;
+        const totalSections = 4;
+        let tempOnboardingData = {};
+        let userEmail = '';
+        let fullName = '';
+
+        function showAlert(message, type = 'error') {
+            document.getElementById('alertContainer').innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+
+        function updateProgress() {
+            document.querySelectorAll('.progress-step').forEach((el, i) => el.classList.toggle('active', i + 1 === currentSection));
+            document.querySelectorAll('.form-section').forEach((el, i) => el.classList.toggle('active', i + 1 === currentSection));
+            document.getElementById('prevBtn').disabled = currentSection === 1;
+            document.getElementById('nextBtn').textContent = currentSection === totalSections ? 'Review & Pay' : 'Next';
+        }
+
+        function nextSection() {
+            // Validate required fields before proceeding
+            if (currentSection === 1) {
+                const nameInput = document.getElementById('fullName');
+                const emailInput = document.getElementById('userEmail');
+                
+                fullName = nameInput.value.trim();
+                userEmail = emailInput.value.trim().toLowerCase();
+                
+                if (!fullName) {
+                    showAlert('Please enter your full name', 'error');
+                    nameInput.focus();
+                    return;
+                }
+                
+                if (!userEmail || !userEmail.includes('@')) {
+                    showAlert('Please enter a valid email address', 'error');
+                    emailInput.focus();
+                    return;
+                }
+            }
+            
+            if (currentSection === totalSections) {
+                collectAllData();
+                currentSection = 4;
+                updateProgress();
+            } else {
+                currentSection++;
+                updateProgress();
+            }
+        }
+
+        function previousSection() {
+            if (currentSection > 1) { currentSection--; updateProgress(); }
+        }
+
+        function collectAllData() {
+            // These are already collected in nextSection()
+            // fullName and userEmail are already set from validation
+            
+            tempOnboardingData = {
+                full_name: fullName,
+                current_balance: parseFloat(document.getElementById('currentBalance').value) || 0,
+                currency: document.getElementById('currency').value || 'USD',
+                income_sources: [],
+                expenses: [],
+                invoices: []
+            };
+
+            document.querySelectorAll('.income-source').forEach(s => {
+                const name = s.querySelector('.income-name').value.trim();
+                const amount = s.querySelector('.income-amount').value.trim();
+                if (name && amount) {
+                    tempOnboardingData.income_sources.push({
+                        name, amount: parseFloat(amount),
+                        type: s.querySelector('.income-type').value
+                    });
+                }
+            });
+
+            document.querySelectorAll('.expense-item').forEach(e => {
+                const name = e.querySelector('.expense-name').value.trim();
+                const amount = e.querySelector('.expense-amount').value.trim();
+                if (name && amount) {
+                    tempOnboardingData.expenses.push({
+                        name, amount: parseFloat(amount),
+                        category: e.querySelector('.expense-category').value
+                    });
+                }
+            });
+
+            document.querySelectorAll('.invoice-item').forEach(i => {
+                const num = i.querySelector('.invoice-number').value.trim();
+                if (num) {
+                    tempOnboardingData.invoices.push({
+                        number: num,
+                        client: i.querySelector('.invoice-client').value.trim(),
+                        amount: parseFloat(i.querySelector('.invoice-amount').value || 0),
+                        due_date: i.querySelector('.invoice-due-date').value,
+                        description: i.querySelector('.invoice-description').value.trim(),
+                        status: 'pending'
+                    });
+                }
+            });
+
+            return true;
+        }
+
+        function addIncomeSource() {
+            const div = document.createElement('div'); div.className = 'income-source';
+            div.innerHTML = `<div class="item-header"><div class="item-title">Income Source</div><button type="button" class="remove-btn" onclick="this.closest('.income-source').remove()">Remove</button></div>
+                <div class="form-grid">
+                    <div class="form-group"><label>Source Name</label><input type="text" class="income-name" required></div>
+                    <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="income-amount" required></div></div>
+                    <div class="form-group"><label>Type</label><select class="income-type"><option value="salary">Salary</option><option value="freelance">Freelance</option><option value="investment">Investment</option><option value="rental">Rental</option><option value="other">Other</option></select></div>
+                </div>`;
+            document.getElementById('incomeSources').appendChild(div);
+        }
+
+        function addExpenseItem() {
+            const div = document.createElement('div'); div.className = 'expense-item';
+            div.innerHTML = `<div class="item-header"><div class="item-title">Expense</div><button type="button" class="remove-btn" onclick="this.closest('.expense-item').remove()">Remove</button></div>
+                <div class="form-grid">
+                    <div class="form-group"><label>Expense Name</label><input type="text" class="expense-name" required></div>
+                    <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="expense-amount" required></div></div>
+                    <div class="form-group"><label>Category</label><select class="expense-category"><option value="housing">Housing</option><option value="utilities">Utilities</option><option value="food">Food & Dining</option><option value="transportation">Transportation</option><option value="entertainment">Entertainment</option><option value="business">Business</option><option value="other">Other</option></select></div>
+                </div>`;
+            document.getElementById('expenseItems').appendChild(div);
+        }
+
+        function addInvoiceItem() {
+            const div = document.createElement('div'); div.className = 'invoice-item';
+            div.innerHTML = `<div class="item-header"><div class="item-title">Invoice</div><button type="button" class="remove-btn" onclick="this.closest('.invoice-item').remove()">Remove</button></div>
+                <div class="form-grid">
+                    <div class="form-group"><label>Invoice #</label><input type="text" class="invoice-number" required></div>
+                    <div class="form-group"><label>Client Name</label><input type="text" class="invoice-client"></div>
+                    <div class="form-group"><label>Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="invoice-amount"></div></div>
+                    <div class="form-group"><label>Due Date</label><input type="date" class="invoice-due-date"></div>
+                    <div class="form-group full-width"><label>Description</label><textarea class="invoice-description" rows="2"></textarea></div>
+                </div>`;
+            document.getElementById('invoiceItems').appendChild(div);
+        }
+
+        // ====== PAYMENT ======
+        document.getElementById('checkout-btn').addEventListener('click', () => {
+            if (!collectAllData()) return;
+
+            document.getElementById('payment-processing').classList.add('active');
+            document.getElementById('checkout-btn').disabled = true;
+
+            LemonSqueezy.Checkout({
+                store: LEMONSQUEEZY_STORE_ID,
+                variant: LEMONSQUEEZY_VARIANT_ID,
+                email: userEmail,
+                metadata: { 
+                    email: userEmail,
+                    full_name: fullName 
+                }
+            }).open();
+        });
+
+        // ====== SUCCESS: CREATE ACCOUNT ONLY NOW ======
+        window.addEventListener('lemonsqueezy:checkout_success', async () => {
+            const password = Math.random().toString(36).slice(-8) + "A1!a";
+
+            try {
+                // Create Supabase auth user
+                const { data, error } = await supabase.auth.signUp({
+                    email: userEmail,
+                    password: password,
+                    options: { 
+                        data: { 
+                            full_name: fullName,
+                            email: userEmail
+                        } 
+                    }
+                });
+
+                let user = data.user;
+
+                // If user already exists, sign in instead
+                if (error && !error.message.includes('already registered')) throw error;
+                if (!user) {
+                    const { data: loginData } = await supabase.auth.signInWithPassword({ 
+                        email: userEmail, 
+                        password: password 
+                    });
+                    user = loginData.user;
+                }
+
+                // Store all data in user_profiles table including full_name
+                await supabase.from('user_profiles').upsert({
+                    id: user.id,
+                    email: userEmail,
+                    full_name: fullName,
+                    ...tempOnboardingData,
+                    plan: 'pro_lifetime',
+                    payment_status: 'paid',
+                    payment_completed_at: new Date().toISOString(),
+                    onboarding_completed: true
+                });
+
+                // Show success message
+                document.getElementById('section-payment').style.display = 'none';
+                document.getElementById('section-success').style.display = 'block';
+                document.querySelector('.form-actions').style.display = 'none';
+
+                // Redirect to dashboard
+                setTimeout(() => location.href = '/dashboard.html', 3000);
+
+            } catch (err) {
+                console.error('Account creation error:', err);
+                showAlert('Payment succeeded but account creation failed. Please contact support.', 'error');
+                document.getElementById('payment-processing').classList.remove('active');
+                document.getElementById('checkout-btn').disabled = false;
+            }
+        });
+
+        window.addEventListener('lemonsqueezy:checkout_close', () => {
+            document.getElementById('payment-processing').classList.remove('active');
+            document.getElementById('checkout-btn').disabled = false;
+        });
+
+        // Default due date
+        document.addEventListener('DOMContentLoaded', () => {
+            const date = new Date();
+            date.setDate(date.getDate() + 30);
+            document.querySelectorAll('.invoice-due-date').forEach(el => {
+                if (!el.value) el.valueAsDate = date;
+            });
+        });
+    </script>
+</body>
+</html>
