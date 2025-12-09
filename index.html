@@ -952,12 +952,16 @@
     }
 
     /* Extra small screens */
-    @media (max-width: 480px) {
-      .logo-img {
-        height: 30px;
-        max-width: 150px;
-      }
+     @media (max-width: 480px) {
+    .logo-img {
+        height: 70px;
     }
+    
+    /* REMOVE THIS MARGIN */
+    .tagline {
+        margin-top: 0; /* This is causing the weird spacing */
+    }
+}
   </style>
 </head>
 <body>
