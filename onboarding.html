@@ -8,8 +8,8 @@
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <!-- Lemon Squeezy Checkout -->
-    <script src="https://app.lemonsqueezy.com/js/checkout.js" defer></script>
+    <!-- Paddle.js -->
+    <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
 
     <style>
         :root {
@@ -149,14 +149,18 @@
             text-align: center;
         }
         .payment-price { font-size: 42px; font-weight: 800; margin: 16px 0; color: var(--primary); }
-        .lemon-checkout-btn {
-            background: var(--primary); color: white; border: none; padding: 16px 40px;
+        .paddle-checkout-btn {
+            background: #2b3a96; /* Paddle's brand color */
+            color: white; border: none; padding: 16px 40px;
             font-size: 17px; font-weight: 600; border-radius: 10px; cursor: pointer;
             display: inline-flex; align-items: center; gap: 12px; margin-top: 12px;
             width: 100%; max-width: 320px; justify-content: center;
         }
-        .lemon-checkout-btn:hover { background: #1d4ed8; transform: translateY(-2px); }
-        .lemon-checkout-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+        .paddle-checkout-btn:hover { 
+            background: #1f2a7a; 
+            transform: translateY(-2px); 
+        }
+        .paddle-checkout-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
        
         .payment-processing { display: none; margin: 24px 0; }
         .payment-processing.active { display: block; }
@@ -292,7 +296,7 @@
                     <div class="payment-price">$29</div>
                     <p style="color: var(--gray-600); margin: 16px 0;">One-time payment • No subscriptions</p>
 
-                    <button id="checkout-btn" class="lemon-checkout-btn">
+                    <button id="checkout-btn" class="paddle-checkout-btn">
                         Get FlowLy Now – $29
                     </button>
 
@@ -303,7 +307,7 @@
                 </div>
 
                 <div style="font-size: 13px; color: var(--gray-600); margin-top: 20px;">
-                    30-day money-back guarantee • Secure payment by Lemon Squeezy
+                    30-day money-back guarantee • Secure payment by Paddle
                 </div>
             </div>
 
@@ -325,10 +329,16 @@
         // ====== CONFIGURATION - CHANGE THESE ======
         const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
-        const LEMONSQUEEZY_STORE_ID = 'YOUR_STORE_ID';        // ← CHANGE
-        const LEMONSQUEEZY_VARIANT_ID = 'YOUR_VARIANT_ID';    // ← CHANGE
+        const PADDLE_VENDOR_ID = 'YOUR_PADDLE_VENDOR_ID';        // ← CHANGE
+        const PADDLE_PRODUCT_ID = 'YOUR_PADDLE_PRODUCT_ID';      // ← CHANGE
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Initialize Paddle
+        Paddle.Setup({ 
+            vendor: parseInt(PADDLE_VENDOR_ID),
+            eventCallback: handlePaddleEvent
+        });
 
         let currentSection = 1;
         const totalSections = 4;
@@ -344,7 +354,7 @@
             document.querySelectorAll('.progress-step').forEach((el, i) => el.classList.toggle('active', i + 1 === currentSection));
             document.querySelectorAll('.form-section').forEach((el, i) => el.classList.toggle('active', i + 1 === currentSection));
             document.getElementById('prevBtn').disabled = currentSection === 1;
-            document.getElementById('nextBtn').textContent = currentSection === totalSections ? 'Review & Pay' : 'Next';
+            document.getElementById('nextBtn').textContent = currentSection === totalSections ? 'Continue to Payment' : 'Next';
         }
 
         function nextSection() {
@@ -369,26 +379,28 @@
                 }
             }
             
-            if (currentSection === totalSections) {
+            // Collect data when moving to payment section
+            if (currentSection === totalSections - 1) {
                 collectAllData();
-                currentSection = 4;
-                updateProgress();
-            } else {
+            }
+            
+            if (currentSection < totalSections) {
                 currentSection++;
                 updateProgress();
             }
         }
 
         function previousSection() {
-            if (currentSection > 1) { currentSection--; updateProgress(); }
+            if (currentSection > 1) { 
+                currentSection--; 
+                updateProgress(); 
+            }
         }
 
         function collectAllData() {
-            // These are already collected in nextSection()
-            // fullName and userEmail are already set from validation
-            
             tempOnboardingData = {
                 full_name: fullName,
+                email: userEmail,
                 current_balance: parseFloat(document.getElementById('currentBalance').value) || 0,
                 currency: document.getElementById('currency').value || 'USD',
                 income_sources: [],
@@ -401,7 +413,8 @@
                 const amount = s.querySelector('.income-amount').value.trim();
                 if (name && amount) {
                     tempOnboardingData.income_sources.push({
-                        name, amount: parseFloat(amount),
+                        name, 
+                        amount: parseFloat(amount),
                         type: s.querySelector('.income-type').value
                     });
                 }
@@ -412,7 +425,8 @@
                 const amount = e.querySelector('.expense-amount').value.trim();
                 if (name && amount) {
                     tempOnboardingData.expenses.push({
-                        name, amount: parseFloat(amount),
+                        name, 
+                        amount: parseFloat(amount),
                         category: e.querySelector('.expense-category').value
                     });
                 }
@@ -470,29 +484,43 @@
             document.getElementById('invoiceItems').appendChild(div);
         }
 
-        // ====== PAYMENT ======
+        // ====== PADDLE PAYMENT ======
         document.getElementById('checkout-btn').addEventListener('click', () => {
-            if (!collectAllData()) return;
+            if (!userEmail) {
+                showAlert('Please complete all sections before payment', 'error');
+                return;
+            }
 
             document.getElementById('payment-processing').classList.add('active');
             document.getElementById('checkout-btn').disabled = true;
 
-            LemonSqueezy.Checkout({
-                store: LEMONSQUEEZY_STORE_ID,
-                variant: LEMONSQUEEZY_VARIANT_ID,
+            // Open Paddle checkout
+            Paddle.Checkout.open({
+                product: parseInt(PADDLE_PRODUCT_ID),
                 email: userEmail,
-                metadata: { 
+                passthrough: JSON.stringify({
                     email: userEmail,
-                    full_name: fullName 
-                }
-            }).open();
+                    full_name: fullName,
+                    onboarding_data: tempOnboardingData
+                }),
+                successCallback: handlePaymentSuccess,
+                closeCallback: handlePaymentClose
+            });
         });
 
-        // ====== SUCCESS: CREATE ACCOUNT ONLY NOW ======
-        window.addEventListener('lemonsqueezy:checkout_success', async () => {
-            const password = Math.random().toString(36).slice(-8) + "A1!a";
+        function handlePaddleEvent(event) {
+            console.log('Paddle event:', event);
+            
+            if (event.event === 'Checkout.Complete') {
+                // Payment completed successfully
+                handlePaymentSuccess(event.eventData);
+            }
+        }
 
+        async function handlePaymentSuccess(eventData) {
             try {
+                const password = Math.random().toString(36).slice(-8) + "A1!a";
+
                 // Create Supabase auth user
                 const { data, error } = await supabase.auth.signUp({
                     email: userEmail,
@@ -517,7 +545,7 @@
                     user = loginData.user;
                 }
 
-                // Store all data in user_profiles table including full_name
+                // Store all data in user_profiles table
                 await supabase.from('user_profiles').upsert({
                     id: user.id,
                     email: userEmail,
@@ -525,6 +553,7 @@
                     ...tempOnboardingData,
                     plan: 'pro_lifetime',
                     payment_status: 'paid',
+                    payment_processor: 'paddle',
                     payment_completed_at: new Date().toISOString(),
                     onboarding_completed: true
                 });
@@ -543,12 +572,12 @@
                 document.getElementById('payment-processing').classList.remove('active');
                 document.getElementById('checkout-btn').disabled = false;
             }
-        });
+        }
 
-        window.addEventListener('lemonsqueezy:checkout_close', () => {
+        function handlePaymentClose() {
             document.getElementById('payment-processing').classList.remove('active');
             document.getElementById('checkout-btn').disabled = false;
-        });
+        }
 
         // Default due date
         document.addEventListener('DOMContentLoaded', () => {
