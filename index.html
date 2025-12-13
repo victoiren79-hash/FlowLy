@@ -28,7 +28,6 @@
       color: var(--gray-900);
       line-height: 1.6;
       overflow-x: hidden;
-      perspective: 1000px;
     }
 
     html {
@@ -39,13 +38,12 @@
     nav {
       background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(20px);
-      padding: 16px 0; /* Reduced padding */
+      padding: 16px 0;
       border-bottom: 1px solid var(--gray-100);
       position: sticky;
       top: 0;
       z-index: 1000;
       box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-      backdrop-filter: 05;
       transition: all 0.3s ease;
     }
 
@@ -56,7 +54,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      height: 60px; /* Fixed height for consistency */
+      height: 60px;
     }
 
     .logo {
@@ -64,7 +62,7 @@
       align-items: center;
       text-decoration: none;
       transition: transform 0.3s ease;
-      height: 100px; /* Fixed height for logo container */
+      height: 60px;
     }
 
     .logo:hover {
@@ -73,9 +71,9 @@
 
     /* Logo with max-height constraint */
     .logo-img {
-      height: 200px; /* Fixed height */
-      width: auto; /* Maintain aspect ratio */
-      max-width: 200px; /* Maximum width to prevent overflow */
+      height: 45px;
+      width: auto;
+      max-width: 200px;
       object-fit: contain;
     }
 
@@ -119,7 +117,7 @@
       width: 100%;
     }
 
-    /* Navigation Button - Fixed to be visible */
+    /* Navigation Button */
     .nav-btn {
       padding: 10px 24px;
       border-radius: 10px;
@@ -211,7 +209,7 @@
       transform: translateY(-2px);
     }
 
-    /* Hero Section */
+    /* Hero Section - FIXED: Full height on desktop */
     .hero {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: white;
@@ -219,6 +217,19 @@
       text-align: center;
       position: relative;
       overflow: hidden;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Mobile-specific hero padding */
+    @media (max-width: 768px) {
+      .hero {
+        min-height: auto;
+        padding: 80px 20px;
+        display: block;
+      }
     }
 
     .hero::before {
@@ -345,7 +356,7 @@
       margin-right: auto;
     }
 
-    /* Emotional Pain Points Section - Updated with 3D */
+    /* Emotional Pain Points Section - Simplified animations */
     .pain-points {
       padding: 100px 0;
       background: var(--gray-50);
@@ -369,8 +380,6 @@
       overflow: hidden;
       opacity: 0;
       transform: translateY(40px);
-      transform-style: preserve-3d;
-      perspective: 1000px;
     }
 
     .pain-card.animated {
@@ -400,10 +409,10 @@
       opacity: 1;
     }
 
+    /* SIMPLIFIED: Removed complex 3D transforms causing lag */
     .pain-card:hover {
-      transform: translateY(-12px) rotateX(5deg) rotateY(5deg);
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15),
-                  0 0 0 1px rgba(37, 99, 235, 0.1);
+      transform: translateY(-12px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.15);
     }
 
     .pain-icon {
@@ -418,11 +427,10 @@
       margin-bottom: 24px;
       box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
       transition: transform 0.3s ease;
-      transform-style: preserve-3d;
     }
 
     .pain-card:hover .pain-icon {
-      transform: rotateY(15deg) rotateX(10deg) scale(1.1);
+      transform: scale(1.1);
       box-shadow: 0 12px 32px rgba(239, 68, 68, 0.4);
     }
 
@@ -483,7 +491,7 @@
       transform: scale(1.05);
     }
 
-    /* Features Section - Updated with 3D */
+    /* Features Section - Simplified animations */
     .features {
       padding: 100px 0;
       background: var(--gray-50);
@@ -508,8 +516,6 @@
       overflow: hidden;
       opacity: 0;
       transform: translateY(40px);
-      transform-style: preserve-3d;
-      perspective: 1000px;
     }
 
     .feature-item.animated {
@@ -539,10 +545,10 @@
       transform: scaleX(1);
     }
 
+    /* SIMPLIFIED: Removed complex 3D transforms causing lag */
     .feature-item:hover {
-      transform: translateY(-10px) rotateX(5deg) rotateY(-5deg);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15),
-                  0 0 0 1px rgba(37, 99, 235, 0.1);
+      transform: translateY(-10px);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
     }
 
     .feature-icon {
@@ -556,11 +562,10 @@
       margin: 0 auto 28px;
       box-shadow: 0 12px 32px rgba(37, 99, 235, 0.4);
       transition: all 0.3s ease;
-      transform-style: preserve-3d;
     }
 
     .feature-item:hover .feature-icon {
-      transform: rotateY(180deg) scale(1.1);
+      transform: scale(1.1);
       box-shadow: 0 16px 40px rgba(37, 99, 235, 0.5);
     }
 
@@ -692,7 +697,7 @@
       margin-top: 4px;
     }
 
-    /* Pricing Section - At bottom */
+    /* Pricing Section */
     .pricing {
       padding: 100px 0;
       background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
@@ -897,13 +902,23 @@
         display: none;
       }
 
+      /* FIXED: Reduced logo size on mobile */
       .logo-img {
-        height: 35px; /* Slightly smaller on mobile */
+        height: 35px;
         max-width: 180px;
+      }
+
+      .nav-container {
+        flex-direction: row;
+        gap: 0;
+        height: 60px;
+        padding: 0 20px;
       }
 
       .hero {
         padding: 80px 20px;
+        min-height: auto;
+        display: block;
       }
 
       .hero-buttons {
@@ -941,27 +956,12 @@
       }
     }
 
-    /* Mobile nav toggle - simplified */
-    @media (max-width: 768px) {
-      .nav-container {
-        flex-direction: column;
-        gap: 15px;
-        height: auto;
-        padding: 15px 20px;
+    /* Extra small screens */
+    @media (max-width: 480px) {
+      .logo-img {
+        height: 35px;
       }
     }
-
-    /* Extra small screens */
-     @media (max-width: 480px) {
-    .logo-img {
-        height: 70px;
-    }
-    
-    /* REMOVE THIS MARGIN */
-    .tagline {
-        margin-top: 0; /* This is causing the weird spacing */
-    }
-}
   </style>
 </head>
 <body>
@@ -1042,7 +1042,7 @@
         <div class="pain-card">
           <div class="pain-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
             </svg>
           </div>
           <h3>Overwhelmed by Complexity</h3>
@@ -1052,7 +1052,7 @@
         <div class="pain-card">
           <div class="pain-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-.22-13h.06c2.76.46 4.94 2.64 5.4 5.4.04.28-.19.5-.47.5h-.06c-.28 0-.5-.22-.5-.5-.4-2.39-2.3-4.29-4.69-4.69-.28-.04-.5-.26-.5-.5v-.06c0-.28.22-.5.5-.5z"/>
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
           </div>
           <h3>No Time for Financial Clarity</h3>
@@ -1205,9 +1205,8 @@
   </footer>
 
   <script>
-    // Enhanced 3D effects on mouse move
+    // Simplified scroll animation trigger
     document.addEventListener('DOMContentLoaded', function() {
-      // Scroll animation trigger
       const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -1221,78 +1220,24 @@
         });
       }, observerOptions);
 
-      // Observe elements
+      // Observe elements for scroll animations
       document.querySelectorAll('.pain-card, .feature-item, .screenshot-container, .pricing-card, .testimonial-card').forEach(el => {
         observer.observe(el);
       });
 
-      // Enhanced 3D effect on mouse move
+      // Simple hover effect for cards (removed complex 3D calculations)
       const cards = document.querySelectorAll('.pain-card, .feature-item');
       
-      document.addEventListener('mousemove', function(e) {
-        cards.forEach(card => {
-          const rect = card.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          
-          const centerX = rect.width / 2;
-          const centerY = rect.height / 2;
-          
-          // Calculate rotation based on mouse position
-          const rotateY = (x - centerX) / 25;
-          const rotateX = (centerY - y) / 25;
-          
-          // Apply 3D rotation
-          card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-${Math.abs(rotateX * 0.5)}px)`;
-          
-          // Add depth effect with shadows
-          const shadowX = rotateY * 2;
-          const shadowY = rotateX * 2;
-          const shadowBlur = 30 + Math.abs(rotateX * 2);
-          
-          if (card.classList.contains('pain-card')) {
-            card.style.boxShadow = `
-              ${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, 0.15),
-              0 0 0 1px rgba(37, 99, 235, 0.1)
-            `;
-          } else {
-            card.style.boxShadow = `
-              ${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, 0.15),
-              0 0 0 1px rgba(37, 99, 235, 0.1)
-            `;
-          }
-        });
-      });
-
-      // Reset cards when mouse leaves
-      document.addEventListener('mouseleave', function() {
-        cards.forEach(card => {
-          card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
-          card.style.boxShadow = '';
-        });
-      });
-
-      // Add smooth transition back to normal when mouse leaves card
       cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+        });
+        
         card.addEventListener('mouseleave', function() {
           this.style.transition = 'transform 0.5s ease, box-shadow 0.5s ease';
-          this.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(0)';
-          
-          if (this.classList.contains('pain-card')) {
-            this.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.08)';
-          } else {
-            this.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.08)';
-          }
-          
-          // Reset transition after animation
-          setTimeout(() => {
-            this.style.transition = '';
-          }, 500);
         });
       });
     });
   </script>
 </body>
 </html>
-
-
