@@ -193,7 +193,7 @@
             <div class="progress-step active"><div class="step-number">1</div><span>Basic Info</span></div>
             <div class="progress-step"><div class="step-number">2</div><span>Income & Expenses</span></div>
             <div class="progress-step"><div class="step-number">3</div><span>Invoices</span></div>
-            <div class="progress-step"><div class="step-number">4</div><span>Payment</div>
+            <div class="progress-step"><div class="step-number">4</div><span>Payment</span></div>
         </div>
        
         <div class="onboarding-content">
@@ -350,40 +350,54 @@
             document.getElementById('alertContainer').innerHTML = `<div class="alert alert-${type}">${message}</div>`;
         }
 
+        function clearAlert() {
+            document.getElementById('alertContainer').innerHTML = '';
+        }
+
         function updateProgress() {
-            document.querySelectorAll('.progress-step').forEach((el, i) => el.classList.toggle('active', i + 1 === currentSection));
-            document.querySelectorAll('.form-section').forEach((el, i) => el.classList.toggle('active', i + 1 === currentSection));
+            document.querySelectorAll('.progress-step').forEach((el, i) => {
+                el.classList.toggle('active', i + 1 === currentSection);
+            });
+            
+            document.querySelectorAll('.form-section').forEach((el, i) => {
+                el.classList.toggle('active', i + 1 === currentSection);
+            });
+            
             document.getElementById('prevBtn').disabled = currentSection === 1;
-            document.getElementById('nextBtn').textContent = currentSection === totalSections ? 'Continue to Payment' : 'Next';
+            
+            // Update next button text based on current section
+            if (currentSection === totalSections) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('prevBtn').style.display = 'block';
+            } else {
+                document.getElementById('nextBtn').style.display = 'block';
+                document.getElementById('prevBtn').style.display = 'block';
+                document.getElementById('nextBtn').textContent = currentSection === totalSections - 1 ? 'Continue to Payment' : 'Next';
+            }
         }
 
         function nextSection() {
-            // Validate required fields before proceeding
+            clearAlert();
+            
+            // Validate current section before proceeding
             if (currentSection === 1) {
-                const nameInput = document.getElementById('fullName');
-                const emailInput = document.getElementById('userEmail');
-                
-                fullName = nameInput.value.trim();
-                userEmail = emailInput.value.trim().toLowerCase();
-                
-                if (!fullName) {
-                    showAlert('Please enter your full name', 'error');
-                    nameInput.focus();
-                    return;
-                }
-                
-                if (!userEmail || !userEmail.includes('@')) {
-                    showAlert('Please enter a valid email address', 'error');
-                    emailInput.focus();
-                    return;
-                }
+                if (!validateSection1()) return;
             }
             
-            // Collect data when moving to payment section
+            if (currentSection === 2) {
+                if (!validateSection2()) return;
+            }
+            
+            if (currentSection === 3) {
+                if (!validateSection3()) return;
+            }
+            
+            // If moving to payment section (section 4), collect all data
             if (currentSection === totalSections - 1) {
-                collectAllData();
+                if (!collectAllData()) return;
             }
             
+            // Move to next section
             if (currentSection < totalSections) {
                 currentSection++;
                 updateProgress();
@@ -391,95 +405,264 @@
         }
 
         function previousSection() {
+            clearAlert();
             if (currentSection > 1) { 
                 currentSection--; 
                 updateProgress(); 
             }
         }
 
-        function collectAllData() {
-            tempOnboardingData = {
-                full_name: fullName,
-                email: userEmail,
-                current_balance: parseFloat(document.getElementById('currentBalance').value) || 0,
-                currency: document.getElementById('currency').value || 'USD',
-                income_sources: [],
-                expenses: [],
-                invoices: []
-            };
-
-            document.querySelectorAll('.income-source').forEach(s => {
-                const name = s.querySelector('.income-name').value.trim();
-                const amount = s.querySelector('.income-amount').value.trim();
-                if (name && amount) {
-                    tempOnboardingData.income_sources.push({
-                        name, 
-                        amount: parseFloat(amount),
-                        type: s.querySelector('.income-type').value
-                    });
-                }
-            });
-
-            document.querySelectorAll('.expense-item').forEach(e => {
-                const name = e.querySelector('.expense-name').value.trim();
-                const amount = e.querySelector('.expense-amount').value.trim();
-                if (name && amount) {
-                    tempOnboardingData.expenses.push({
-                        name, 
-                        amount: parseFloat(amount),
-                        category: e.querySelector('.expense-category').value
-                    });
-                }
-            });
-
-            document.querySelectorAll('.invoice-item').forEach(i => {
-                const num = i.querySelector('.invoice-number').value.trim();
-                if (num) {
-                    tempOnboardingData.invoices.push({
-                        number: num,
-                        client: i.querySelector('.invoice-client').value.trim(),
-                        amount: parseFloat(i.querySelector('.invoice-amount').value || 0),
-                        due_date: i.querySelector('.invoice-due-date').value,
-                        description: i.querySelector('.invoice-description').value.trim(),
-                        status: 'pending'
-                    });
-                }
-            });
-
+        function validateSection1() {
+            const nameInput = document.getElementById('fullName');
+            const emailInput = document.getElementById('userEmail');
+            const balanceInput = document.getElementById('currentBalance');
+            
+            fullName = nameInput.value.trim();
+            userEmail = emailInput.value.trim().toLowerCase();
+            
+            if (!fullName) {
+                showAlert('Please enter your full name', 'error');
+                nameInput.focus();
+                return false;
+            }
+            
+            if (!userEmail || !userEmail.includes('@')) {
+                showAlert('Please enter a valid email address', 'error');
+                emailInput.focus();
+                return false;
+            }
+            
+            if (balanceInput.value && isNaN(parseFloat(balanceInput.value))) {
+                showAlert('Please enter a valid current balance', 'error');
+                balanceInput.focus();
+                return false;
+            }
+            
             return true;
         }
 
+        function validateSection2() {
+            // Validate income sources
+            let hasValidIncome = false;
+            document.querySelectorAll('.income-source').forEach((s, index) => {
+                const name = s.querySelector('.income-name').value.trim();
+                const amount = s.querySelector('.income-amount').value.trim();
+                if (name && amount && !isNaN(parseFloat(amount))) {
+                    hasValidIncome = true;
+                }
+            });
+            
+            if (!hasValidIncome) {
+                showAlert('Please add at least one valid income source', 'error');
+                return false;
+            }
+            
+            // Validate expenses
+            let hasValidExpense = false;
+            document.querySelectorAll('.expense-item').forEach((e, index) => {
+                const name = e.querySelector('.expense-name').value.trim();
+                const amount = e.querySelector('.expense-amount').value.trim();
+                if (name && amount && !isNaN(parseFloat(amount))) {
+                    hasValidExpense = true;
+                }
+            });
+            
+            if (!hasValidExpense) {
+                showAlert('Please add at least one valid expense', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+
+        function validateSection3() {
+            // Invoices are optional, but if added, validate them
+            let allInvoicesValid = true;
+            document.querySelectorAll('.invoice-item').forEach((i, index) => {
+                const number = i.querySelector('.invoice-number').value.trim();
+                const amount = i.querySelector('.invoice-amount').value.trim();
+                
+                // If invoice number is provided, validate the amount too
+                if (number) {
+                    if (!amount || isNaN(parseFloat(amount))) {
+                        showAlert(`Invoice #${number || index + 1} has an invalid amount`, 'error');
+                        allInvoicesValid = false;
+                    }
+                }
+            });
+            
+            return allInvoicesValid;
+        }
+
+        function collectAllData() {
+            try {
+                tempOnboardingData = {
+                    full_name: fullName,
+                    email: userEmail,
+                    current_balance: parseFloat(document.getElementById('currentBalance').value) || 0,
+                    currency: document.getElementById('currency').value || 'USD',
+                    income_sources: [],
+                    expenses: [],
+                    invoices: []
+                };
+
+                // Collect income sources
+                document.querySelectorAll('.income-source').forEach(s => {
+                    const name = s.querySelector('.income-name').value.trim();
+                    const amount = s.querySelector('.income-amount').value.trim();
+                    if (name && amount && !isNaN(parseFloat(amount))) {
+                        tempOnboardingData.income_sources.push({
+                            name, 
+                            amount: parseFloat(amount),
+                            type: s.querySelector('.income-type').value
+                        });
+                    }
+                });
+
+                // Collect expenses
+                document.querySelectorAll('.expense-item').forEach(e => {
+                    const name = e.querySelector('.expense-name').value.trim();
+                    const amount = e.querySelector('.expense-amount').value.trim();
+                    if (name && amount && !isNaN(parseFloat(amount))) {
+                        tempOnboardingData.expenses.push({
+                            name, 
+                            amount: parseFloat(amount),
+                            category: e.querySelector('.expense-category').value
+                        });
+                    }
+                });
+
+                // Collect invoices
+                document.querySelectorAll('.invoice-item').forEach(i => {
+                    const num = i.querySelector('.invoice-number').value.trim();
+                    const amount = i.querySelector('.invoice-amount').value.trim();
+                    if (num) {
+                        tempOnboardingData.invoices.push({
+                            number: num,
+                            client: i.querySelector('.invoice-client').value.trim(),
+                            amount: parseFloat(amount || 0),
+                            due_date: i.querySelector('.invoice-due-date').value,
+                            description: i.querySelector('.invoice-description').value.trim(),
+                            status: 'pending'
+                        });
+                    }
+                });
+
+                console.log('Data collected successfully:', tempOnboardingData);
+                return true;
+            } catch (error) {
+                console.error('Error collecting data:', error);
+                showAlert('Error collecting your data. Please try again.', 'error');
+                return false;
+            }
+        }
+
         function addIncomeSource() {
-            const div = document.createElement('div'); div.className = 'income-source';
-            div.innerHTML = `<div class="item-header"><div class="item-title">Income Source</div><button type="button" class="remove-btn" onclick="this.closest('.income-source').remove()">Remove</button></div>
+            const div = document.createElement('div'); 
+            div.className = 'income-source';
+            div.innerHTML = `
+                <div class="item-header">
+                    <div class="item-title">Income Source</div>
+                    <button type="button" class="remove-btn" onclick="this.closest('.income-source').remove()">Remove</button>
+                </div>
                 <div class="form-grid">
-                    <div class="form-group"><label>Source Name</label><input type="text" class="income-name" required></div>
-                    <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="income-amount" required></div></div>
-                    <div class="form-group"><label>Type</label><select class="income-type"><option value="salary">Salary</option><option value="freelance">Freelance</option><option value="investment">Investment</option><option value="rental">Rental</option><option value="other">Other</option></select></div>
+                    <div class="form-group">
+                        <label>Source Name</label>
+                        <input type="text" class="income-name" placeholder="Salary, Freelance, etc." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Amount</label>
+                        <div class="currency-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" step="0.01" class="income-amount" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select class="income-type">
+                            <option value="salary">Salary</option>
+                            <option value="freelance">Freelance</option>
+                            <option value="investment">Investment</option>
+                            <option value="rental">Rental</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
                 </div>`;
             document.getElementById('incomeSources').appendChild(div);
         }
 
         function addExpenseItem() {
-            const div = document.createElement('div'); div.className = 'expense-item';
-            div.innerHTML = `<div class="item-header"><div class="item-title">Expense</div><button type="button" class="remove-btn" onclick="this.closest('.expense-item').remove()">Remove</button></div>
+            const div = document.createElement('div'); 
+            div.className = 'expense-item';
+            div.innerHTML = `
+                <div class="item-header">
+                    <div class="item-title">Expense</div>
+                    <button type="button" class="remove-btn" onclick="this.closest('.expense-item').remove()">Remove</button>
+                </div>
                 <div class="form-grid">
-                    <div class="form-group"><label>Expense Name</label><input type="text" class="expense-name" required></div>
-                    <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="expense-amount" required></div></div>
-                    <div class="form-group"><label>Category</label><select class="expense-category"><option value="housing">Housing</option><option value="utilities">Utilities</option><option value="food">Food & Dining</option><option value="transportation">Transportation</option><option value="entertainment">Entertainment</option><option value="business">Business</option><option value="other">Other</option></select></div>
+                    <div class="form-group">
+                        <label>Expense Name</label>
+                        <input type="text" class="expense-name" placeholder="Rent, Utilities, etc." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Amount</label>
+                        <div class="currency-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" step="0.01" class="expense-amount" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select class="expense-category">
+                            <option value="housing">Housing</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="food">Food & Dining</option>
+                            <option value="transportation">Transportation</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="business">Business</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
                 </div>`;
             document.getElementById('expenseItems').appendChild(div);
         }
 
         function addInvoiceItem() {
-            const div = document.createElement('div'); div.className = 'invoice-item';
-            div.innerHTML = `<div class="item-header"><div class="item-title">Invoice</div><button type="button" class="remove-btn" onclick="this.closest('.invoice-item').remove()">Remove</button></div>
+            const date = new Date();
+            date.setDate(date.getDate() + 30);
+            const dueDate = date.toISOString().split('T')[0];
+            
+            const div = document.createElement('div'); 
+            div.className = 'invoice-item';
+            div.innerHTML = `
+                <div class="item-header">
+                    <div class="item-title">Invoice</div>
+                    <button type="button" class="remove-btn" onclick="this.closest('.invoice-item').remove()">Remove</button>
+                </div>
                 <div class="form-grid">
-                    <div class="form-group"><label>Invoice #</label><input type="text" class="invoice-number" required></div>
-                    <div class="form-group"><label>Client Name</label><input type="text" class="invoice-client"></div>
-                    <div class="form-group"><label>Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="invoice-amount"></div></div>
-                    <div class="form-group"><label>Due Date</label><input type="date" class="invoice-due-date"></div>
-                    <div class="form-group full-width"><label>Description</label><textarea class="invoice-description" rows="2"></textarea></div>
+                    <div class="form-group">
+                        <label>Invoice #</label>
+                        <input type="text" class="invoice-number" placeholder="INV-001" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Client Name</label>
+                        <input type="text" class="invoice-client" placeholder="Client Company">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <div class="currency-input">
+                            <span class="currency-symbol">$</span>
+                            <input type="number" step="0.01" class="invoice-amount" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input type="date" class="invoice-due-date" value="${dueDate}">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Description</label>
+                        <textarea class="invoice-description" rows="2" placeholder="Description of services"></textarea>
+                    </div>
                 </div>`;
             document.getElementById('invoiceItems').appendChild(div);
         }
@@ -512,7 +695,6 @@
             console.log('Paddle event:', event);
             
             if (event.event === 'Checkout.Complete') {
-                // Payment completed successfully
                 handlePaymentSuccess(event.eventData);
             }
         }
@@ -533,20 +715,25 @@
                     }
                 });
 
-                let user = data.user;
+                let user = data?.user;
 
                 // If user already exists, sign in instead
-                if (error && !error.message.includes('already registered')) throw error;
+                if (error && !error.message.includes('already registered')) {
+                    console.error('Signup error:', error);
+                    throw error;
+                }
+                
                 if (!user) {
-                    const { data: loginData } = await supabase.auth.signInWithPassword({ 
+                    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ 
                         email: userEmail, 
                         password: password 
                     });
+                    if (loginError) throw loginError;
                     user = loginData.user;
                 }
 
                 // Store all data in user_profiles table
-                await supabase.from('user_profiles').upsert({
+                const { error: profileError } = await supabase.from('user_profiles').upsert({
                     id: user.id,
                     email: userEmail,
                     full_name: fullName,
@@ -558,13 +745,17 @@
                     onboarding_completed: true
                 });
 
+                if (profileError) throw profileError;
+
                 // Show success message
                 document.getElementById('section-payment').style.display = 'none';
                 document.getElementById('section-success').style.display = 'block';
                 document.querySelector('.form-actions').style.display = 'none';
 
                 // Redirect to dashboard
-                setTimeout(() => location.href = '/dashboard.html', 3000);
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 3000);
 
             } catch (err) {
                 console.error('Account creation error:', err);
@@ -579,13 +770,21 @@
             document.getElementById('checkout-btn').disabled = false;
         }
 
-        // Default due date
+        // Initialize default due date on first invoice
         document.addEventListener('DOMContentLoaded', () => {
             const date = new Date();
             date.setDate(date.getDate() + 30);
             document.querySelectorAll('.invoice-due-date').forEach(el => {
                 if (!el.value) el.valueAsDate = date;
             });
+            
+            // Initialize Paddle
+            if (PADDLE_VENDOR_ID !== 'YOUR_PADDLE_VENDOR_ID') {
+                Paddle.Setup({ 
+                    vendor: parseInt(PADDLE_VENDOR_ID),
+                    eventCallback: handlePaddleEvent
+                });
+            }
         });
     </script>
 </body>
