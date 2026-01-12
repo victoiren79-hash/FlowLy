@@ -203,28 +203,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Network error specific styling */
-    .network-error {
-        background: #fef2f2;
-        border: 1px solid #fee2e2;
-        color: #991b1b;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        font-size: 13px;
-    }
-    .network-error h4 {
-        margin: 0 0 8px 0;
-        font-size: 14px;
-    }
-    .network-error ul {
-        margin: 8px 0;
-        padding-left: 20px;
-    }
-    .network-error li {
-        margin-bottom: 4px;
-    }
-
     /* Simple Sign Up Section */
     .signup-section {
         text-align: center;
@@ -290,19 +268,6 @@
 
     <div class="auth-content">
       <div class="auth-form-container">
-        <!-- Network Error Display -->
-        <div id="networkError" class="network-error" style="display: none;">
-          <h4>⚠️ Connection Issue Detected</h4>
-          <p>Unable to connect to the authentication server. Please:</p>
-          <ul>
-            <li>Check your internet connection</li>
-            <li>Verify your Supabase URL and API key are correct</li>
-            <li>Try refreshing the page</li>
-            <li>Check if there are any browser extensions blocking requests</li>
-          </ul>
-          <p><strong>Debug Info:</strong> <span id="debugInfo"></span></p>
-        </div>
-
         <!-- Login Form -->
         <div id="loginForm">
           <h2 class="auth-title">Sign In</h2>
@@ -311,11 +276,11 @@
           <form id="loginFormElement">
             <div class="form-group">
               <label for="loginEmail">Email</label>
-              <input type="email" id="loginEmail" required placeholder="you@example.com" value="test@example.com">
+              <input type="email" id="loginEmail" required placeholder="you@example.com">
             </div>
             <div class="form-group">
               <label for="loginPassword">Password</label>
-              <input type="password" id="loginPassword" required placeholder="••••••••" value="password123">
+              <input type="password" id="loginPassword" required placeholder="••••••••">
             </div>
             <div class="error-message" id="loginError"></div>
             <div class="success-message" id="loginSuccess"></div>
@@ -353,16 +318,11 @@
   </div>
 
   <script>
-    // Supabase configuration - FIXED: Your Supabase URL was missing the project reference
+    // Supabase configuration
     const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrY2JnZ3h0bXd0dGRqeHRvaWVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUwMTU5MTUsImV4cCI6MjA1MDU5MTkxNX0.xPvebQRXqPBC9i6TBR4kRz_i1t9kVkwquDzTX3HFwBs'; // This should be your actual anon key
-
-    // IMPORTANT: Let's verify the Supabase connection first
-    console.log('Testing Supabase connection...');
-    console.log('URL:', SUPABASE_URL);
-    console.log('Key (first 10 chars):', SUPABASE_ANON_KEY.substring(0, 10) + '...');
-
-    // Create Supabase client with error handling
+    const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+    
+    // Create Supabase client
     let supabaseClient;
     try {
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -372,45 +332,8 @@
           detectSessionInUrl: true
         }
       });
-      console.log('Supabase client created successfully');
     } catch (error) {
       console.error('Failed to create Supabase client:', error);
-      showNetworkError('Failed to initialize authentication: ' + error.message);
-    }
-
-    // Function to show network error
-    function showNetworkError(message) {
-      const networkErrorDiv = document.getElementById('networkError');
-      const debugInfoSpan = document.getElementById('debugInfo');
-      
-      if (networkErrorDiv && debugInfoSpan) {
-        debugInfoSpan.textContent = message;
-        networkErrorDiv.style.display = 'block';
-      }
-    }
-
-    // Function to test connection
-    async function testConnection() {
-      try {
-        const response = await fetch(SUPABASE_URL + '/rest/v1/', {
-          method: 'GET',
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        console.log('Connection test successful');
-        return true;
-      } catch (error) {
-        console.error('Connection test failed:', error);
-        showNetworkError(`Cannot reach Supabase: ${error.message}. Check your URL and API key.`);
-        return false;
-      }
     }
 
     // Toggle between login and signup
@@ -434,7 +357,6 @@
 
       document.getElementById('loginError').style.display = 'none';
       document.getElementById('loginSuccess').style.display = 'none';
-      document.getElementById('networkError').style.display = 'none';
 
       const loginButton = document.getElementById('loginButton');
       const loginButtonText = document.getElementById('loginButtonText');
@@ -445,12 +367,6 @@
       loginSpinner.style.display = 'block';
 
       try {
-        // Test connection first
-        const connectionOk = await testConnection();
-        if (!connectionOk) {
-          throw new Error('Cannot connect to authentication server');
-        }
-
         // Use the supabaseClient variable
         const { data, error } = await supabaseClient.auth.signInWithPassword({ 
           email, 
@@ -466,17 +382,14 @@
           } else if (error.message.includes('Email not confirmed')) {
             errorMessage = 'Please check your email to confirm your account.';
           } else if (error.message.includes('failed to fetch')) {
-            errorMessage = 'Network error. Please check your internet connection and try again.';
-            showNetworkError('Network request failed. This could be due to CORS issues or network problems.');
+            errorMessage = 'Unable to connect. Please check your internet connection and try again.';
           }
           
           document.getElementById('loginError').textContent = errorMessage;
           document.getElementById('loginError').style.display = 'block';
-          console.error('Login error:', error);
         } else {
           document.getElementById('loginSuccess').textContent = 'Welcome back. Redirecting...';
           document.getElementById('loginSuccess').style.display = 'block';
-          console.log('Login successful:', data.user);
           
           // Check if user exists before redirecting
           if (data.user) {
@@ -495,7 +408,6 @@
         let errorMessage = 'An unexpected error occurred. Please try again.';
         if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
           errorMessage = 'Network error. Please check your internet connection.';
-          showNetworkError('Network request failed. Possible CORS issue or server unreachable.');
         }
         
         document.getElementById('loginError').textContent = errorMessage;
@@ -507,29 +419,11 @@
       }
     };
 
-    // Focus email field and test connection on load
-    document.addEventListener('DOMContentLoaded', async () => {
+    // Focus email field on load
+    document.addEventListener('DOMContentLoaded', () => {
       const loginEmail = document.getElementById('loginEmail');
       if (loginEmail) {
         setTimeout(() => loginEmail.focus(), 100);
-      }
-      
-      // Test connection when page loads
-      await testConnection();
-      
-      // Test Supabase client directly
-      if (supabaseClient) {
-        try {
-          // Try to get the current session to verify auth is working
-          const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-          if (sessionError) {
-            console.warn('Session check warning:', sessionError.message);
-          } else {
-            console.log('Auth system is working, session:', sessionData.session ? 'exists' : 'no active session');
-          }
-        } catch (error) {
-          console.warn('Auth test failed:', error.message);
-        }
       }
     });
   </script>
