@@ -973,48 +973,195 @@
         </div>
     </main>
 
-    <script>
-        // SIMPLE VERSION - Just get the reports working
+       <script>
+        // SIMPLE SUPABASE SETUP - Use real data
+        const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
         
-        // Wait for the page to load
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Page loaded, initializing reports...');
-            
-            // Create demo charts immediately (no authentication check for now)
-            createDemoCharts();
-            
-            // Setup event listeners
-            setupEventListeners();
-            
-            console.log('Reports page ready');
-        });
+        // Create Supabase client
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        function createDemoCharts() {
-            console.log('Creating demo charts...');
+        // Store user data
+        let currentUser = null;
+        let userProfile = null;
+        let userCurrency = 'EUR';
+        
+        // Format currency
+        function formatCurrency(amount) {
+            if (!amount || isNaN(amount)) {
+                amount = 0;
+            }
             
-            // Demo data
-            const demoData = {
-                totalIncome: 4800,
-                totalExpenses: 2100,
-                netFlow: 2700,
-                incomeBySource: {
-                    'Freelance Work': 2500,
-                    'Consulting': 1500,
-                    'Product Sales': 800
-                },
-                expensesByCategory: {
-                    'Rent': 1200,
-                    'Utilities': 200,
-                    'Groceries': 400,
-                    'Entertainment': 300
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: userCurrency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+        
+        // Check if user is logged in
+        async function checkAuth() {
+            try {
+                const { data: { user }, error } = await supabaseClient.auth.getUser();
+                
+                if (error || !user) {
+                    console.log('Not authenticated, redirecting to login');
+                    window.location.href = 'login.html';
+                    return false;
                 }
+                
+                currentUser = user;
+                console.log('User authenticated:', user.email);
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                return false;
+            }
+        }
+        
+        // Load user profile from database
+        async function loadUserProfile() {
+            try {
+                console.log('Loading profile for user:', currentUser.id);
+                
+                // Try to load from user_profiles table
+                const { data: profile, error } = await supabaseClient
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (error) {
+                    console.log('Error loading profile:', error.message);
+                    return null;
+                }
+                
+                console.log('Profile loaded:', profile);
+                userProfile = profile;
+                
+                // Set currency
+                if (profile.currency) {
+                    userCurrency = profile.currency;
+                }
+                
+                return profile;
+                
+            } catch (error) {
+                console.error('Error in loadUserProfile:', error);
+                return null;
+            }
+        }
+        
+        // Parse JSON data from profile
+        function parseProfileData() {
+            if (!userProfile) {
+                return {
+                    incomeSources: [],
+                    expenses: []
+                };
+            }
+            
+            let incomeSources = [];
+            let expenses = [];
+            
+            try {
+                // Parse income_sources
+                if (userProfile.income_sources) {
+                    if (typeof userProfile.income_sources === 'string') {
+                        incomeSources = JSON.parse(userProfile.income_sources);
+                    } else if (Array.isArray(userProfile.income_sources)) {
+                        incomeSources = userProfile.income_sources;
+                    }
+                }
+                
+                // Parse expenses
+                if (userProfile.expenses) {
+                    if (typeof userProfile.expenses === 'string') {
+                        expenses = JSON.parse(userProfile.expenses);
+                    } else if (Array.isArray(userProfile.expenses)) {
+                        expenses = userProfile.expenses;
+                    }
+                }
+            } catch (error) {
+                console.error('Error parsing profile data:', error);
+            }
+            
+            return { incomeSources, expenses };
+        }
+        
+        // Calculate report data from user profile
+        function calculateReportData() {
+            const { incomeSources, expenses } = parseProfileData();
+            
+            console.log('Income sources from DB:', incomeSources);
+            console.log('Expenses from DB:', expenses);
+            
+            // Calculate totals
+            let totalIncome = 0;
+            let totalExpenses = 0;
+            
+            if (Array.isArray(incomeSources)) {
+                totalIncome = incomeSources.reduce((sum, source) => {
+                    const amount = parseFloat(source?.amount) || 0;
+                    return sum + amount;
+                }, 0);
+            }
+            
+            if (Array.isArray(expenses)) {
+                totalExpenses = expenses.reduce((sum, expense) => {
+                    const amount = parseFloat(expense?.amount) || 0;
+                    return sum + amount;
+                }, 0);
+            }
+            
+            const netFlow = totalIncome - totalExpenses;
+            
+            // Group income by source
+            const incomeBySource = {};
+            if (Array.isArray(incomeSources)) {
+                incomeSources.forEach(source => {
+                    if (source && source.name) {
+                        const name = source.name;
+                        const amount = parseFloat(source.amount) || 0;
+                        incomeBySource[name] = (incomeBySource[name] || 0) + amount;
+                    }
+                });
+            }
+            
+            // Group expenses by category
+            const expensesByCategory = {};
+            if (Array.isArray(expenses)) {
+                expenses.forEach(expense => {
+                    if (expense && expense.category) {
+                        const category = expense.category;
+                        const amount = parseFloat(expense.amount) || 0;
+                        expensesByCategory[category] = (expensesByCategory[category] || 0) + amount;
+                    }
+                });
+            }
+            
+            return {
+                totalIncome,
+                totalExpenses,
+                netFlow,
+                incomeBySource,
+                expensesByCategory
             };
+        }
+        
+        // Create charts with real data
+        function createCharts() {
+            const reportData = calculateReportData();
+            console.log('Report data calculated:', reportData);
             
             // Create Income Sources Chart
             const incomeCtx = document.getElementById('incomeSourcesChart');
             if (incomeCtx) {
-                const incomeLabels = Object.keys(demoData.incomeBySource);
-                const incomeValues = Object.values(demoData.incomeBySource);
+                const incomeLabels = Object.keys(reportData.incomeBySource);
+                const incomeValues = Object.values(reportData.incomeBySource);
+                
+                console.log('Income chart data:', incomeLabels, incomeValues);
                 
                 if (incomeLabels.length > 0) {
                     new Chart(incomeCtx, {
@@ -1023,7 +1170,7 @@
                             labels: incomeLabels,
                             datasets: [{
                                 data: incomeValues,
-                                backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b'],
+                                backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
                                 borderWidth: 1
                             }]
                         },
@@ -1031,7 +1178,17 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { position: 'bottom' }
+                                legend: { position: 'bottom' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (context) => {
+                                            const value = context.raw || 0;
+                                            const total = reportData.totalIncome || 1;
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
+                                        }
+                                    }
+                                }
                             },
                             cutout: '50%'
                         }
@@ -1041,17 +1198,22 @@
                     document.getElementById('incomeSourcesSummary').innerHTML = `
                         <div class="summary-item total">
                             <span>Total Income:</span>
-                            <span class="summary-value money-in">€4,800.00</span>
+                            <span class="summary-value money-in">${formatCurrency(reportData.totalIncome)}</span>
                         </div>
                     `;
+                } else {
+                    incomeCtx.parentElement.innerHTML = '<div class="no-data">No income data available. Add income sources in Settings.</div>';
+                    document.getElementById('incomeSourcesSummary').innerHTML = '';
                 }
             }
             
             // Create Expenses Chart
             const expensesCtx = document.getElementById('expensesChart');
             if (expensesCtx) {
-                const expenseLabels = Object.keys(demoData.expensesByCategory);
-                const expenseValues = Object.values(demoData.expensesByCategory);
+                const expenseLabels = Object.keys(reportData.expensesByCategory);
+                const expenseValues = Object.values(reportData.expensesByCategory);
+                
+                console.log('Expenses chart data:', expenseLabels, expenseValues);
                 
                 if (expenseLabels.length > 0) {
                     new Chart(expensesCtx, {
@@ -1060,7 +1222,7 @@
                             labels: expenseLabels,
                             datasets: [{
                                 data: expenseValues,
-                                backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6'],
+                                backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'],
                                 borderWidth: 1
                             }]
                         },
@@ -1068,7 +1230,17 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { position: 'bottom' }
+                                legend: { position: 'bottom' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (context) => {
+                                            const value = context.raw || 0;
+                                            const total = reportData.totalExpenses || 1;
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
+                                        }
+                                    }
+                                }
                             }
                         }
                     });
@@ -1077,9 +1249,12 @@
                     document.getElementById('expensesSummary').innerHTML = `
                         <div class="summary-item total">
                             <span>Total Expenses:</span>
-                            <span class="summary-value money-out">€2,100.00</span>
+                            <span class="summary-value money-out">${formatCurrency(reportData.totalExpenses)}</span>
                         </div>
                     `;
+                } else {
+                    expensesCtx.parentElement.innerHTML = '<div class="no-data">No expense data available. Add expenses in Settings.</div>';
+                    document.getElementById('expensesSummary').innerHTML = '';
                 }
             }
             
@@ -1092,8 +1267,12 @@
                         labels: ['Money In', 'Money Out', 'Net Cash Flow'],
                         datasets: [{
                             label: 'Amount',
-                            data: [demoData.totalIncome, demoData.totalExpenses, demoData.netFlow],
-                            backgroundColor: ['#10b981', '#ef4444', '#10b981'],
+                            data: [reportData.totalIncome, reportData.totalExpenses, reportData.netFlow],
+                            backgroundColor: [
+                                '#10b981',
+                                '#ef4444',
+                                reportData.netFlow >= 0 ? '#10b981' : '#ef4444'
+                            ],
                             borderWidth: 1
                         }]
                     },
@@ -1105,42 +1284,54 @@
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        return '€' + value.toLocaleString();
+                                        return formatCurrency(value);
                                     }
                                 }
                             }
                         },
                         plugins: {
-                            legend: { display: false }
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        return formatCurrency(context.raw);
+                                    }
+                                }
+                            }
                         }
                     }
                 });
                 
                 // Update summary
+                const total = reportData.totalIncome + reportData.totalExpenses;
+                const incomePercentage = total > 0 ? ((reportData.totalIncome / total) * 100).toFixed(1) : 0;
+                const expensesPercentage = total > 0 ? ((reportData.totalExpenses / total) * 100).toFixed(1) : 0;
+                
                 document.getElementById('moneyFlowSummary').innerHTML = `
                     <div class="summary-item money-in">
                         <span>💰 Money In:</span>
-                        <span class="summary-value">€4,800.00</span>
+                        <span class="summary-value">${formatCurrency(reportData.totalIncome)} (${incomePercentage}%)</span>
                     </div>
                     <div class="summary-item money-out">
                         <span>💸 Money Out:</span>
-                        <span class="summary-value">€2,100.00</span>
+                        <span class="summary-value">${formatCurrency(reportData.totalExpenses)} (${expensesPercentage}%)</span>
                     </div>
-                    <div class="summary-item total net-positive">
+                    <div class="summary-item total ${reportData.netFlow >= 0 ? 'net-positive' : 'net-negative'}">
                         <span>📊 Net Cash Flow:</span>
-                        <span class="summary-value">€2,700.00</span>
+                        <span class="summary-value">${formatCurrency(reportData.netFlow)}</span>
                     </div>
                 `;
             }
         }
         
+        // Setup event listeners
         function setupEventListeners() {
             // Period filter
             const periodFilter = document.getElementById('periodFilter');
             if (periodFilter) {
                 periodFilter.addEventListener('change', function() {
                     console.log('Period changed to:', this.value);
-                    // In a real app, this would reload data
+                    createCharts(); // Refresh charts with same data (for now)
                 });
             }
             
@@ -1195,6 +1386,51 @@
                 exportOptions[0].classList.add('selected');
             }
         }
+        
+        // Main initialization
+        async function initializePage() {
+            console.log('=== Initializing Reports Page ===');
+            
+            // Check authentication
+            const isAuthenticated = await checkAuth();
+            if (!isAuthenticated) {
+                console.log('Authentication failed');
+                return;
+            }
+            
+            console.log('Authentication successful');
+            
+            // Load user profile
+            await loadUserProfile();
+            
+            if (!userProfile) {
+                console.log('No profile found, showing empty state');
+                // Show empty state messages
+                document.getElementById('incomeSourcesChart').parentElement.innerHTML = 
+                    '<div class="no-data">No income data available. Add income sources in Settings.</div>';
+                document.getElementById('expensesChart').parentElement.innerHTML = 
+                    '<div class="no-data">No expense data available. Add expenses in Settings.</div>';
+                document.getElementById('moneyFlowChart').parentElement.innerHTML = 
+                    '<div class="no-data">No financial data available. Add income and expenses in Settings.</div>';
+                
+                // Clear summaries
+                document.getElementById('incomeSourcesSummary').innerHTML = '';
+                document.getElementById('expensesSummary').innerHTML = '';
+                document.getElementById('moneyFlowSummary').innerHTML = '';
+            } else {
+                // Create charts with real data
+                createCharts();
+            }
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            console.log('=== Reports Page Initialized ===');
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializePage);
     </script>
 </body>
 </html>
+
