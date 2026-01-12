@@ -19,6 +19,8 @@
         --gray-700: #374151;
         --gray-800: #1f2937;
         --gray-900: #111827;
+        --danger: #ef4444;
+        --success: #10b981;
     }
 
     * { 
@@ -45,7 +47,7 @@
         background: white;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08)
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
     }
 
     .auth-hero {
@@ -316,9 +318,12 @@
   </div>
 
   <script>
+    // Supabase configuration - IMPORTANT: Use a different variable name
     const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Create Supabase client with a unique variable name
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Toggle between login and signup
     document.getElementById('showSignupLink').onclick = e => {
@@ -350,7 +355,11 @@
       loginButtonText.style.display = 'none';
       loginSpinner.style.display = 'block';
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      // Use the renamed supabaseClient variable
+      const { error } = await supabaseClient.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
 
       if (error) {
         document.getElementById('loginError').textContent = 
@@ -376,5 +385,4 @@
     });
   </script>
 </body>
-
 </html>
