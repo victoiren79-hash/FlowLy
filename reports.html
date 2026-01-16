@@ -7,8 +7,15 @@
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    
+    <!-- Export libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         :root {
@@ -235,6 +242,178 @@
             cursor: not-allowed;
         }
 
+        /* Export Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-600);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .close-modal:hover {
+            background: var(--gray-100);
+        }
+
+        .export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .export-option {
+            padding: 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-option:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .export-option.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .export-option-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .export-option-icon {
+            font-size: 20px;
+        }
+
+        .export-option-title {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .export-option-description {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-left: 32px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-800);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1001;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+            display: none;
+        }
+
+        .toast.show {
+            display: flex;
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
         /* Main Content */
         .reports-grid {
             display: grid;
@@ -323,6 +502,26 @@
             .chart-container {
                 height: 250px;
             }
+            
+            .modal {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .page-header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            
+            .page-header-right {
+                width: 100%;
+            }
+            
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -369,11 +568,63 @@
                 </div>
                 <div class="page-header-right">
                     <button class="btn-primary" id="refreshBtn">
-                        <i class="fas fa-sync-alt"></i> Refresh Data
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn-primary" id="exportBtn">
+                        <i class="fas fa-download"></i> Export
                     </button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Export Report</h3>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div class="export-options">
+                <div class="export-option" data-format="csv">
+                    <div class="export-option-header">
+                        <div class="export-option-icon">📊</div>
+                        <div class="export-option-title">CSV Format</div>
+                    </div>
+                    <div class="export-option-description">
+                        Export your financial data as CSV. Best for spreadsheets and data analysis.
+                    </div>
+                </div>
+                <div class="export-option" data-format="excel">
+                    <div class="export-option-header">
+                        <div class="export-option-icon">📈</div>
+                        <div class="export-option-title">Excel Format</div>
+                    </div>
+                    <div class="export-option-description">
+                        Export as Excel file with formatted tables. Best for presentations.
+                    </div>
+                </div>
+                <div class="export-option" data-format="pdf">
+                    <div class="export-option-header">
+                        <div class="export-option-icon">📄</div>
+                        <div class="export-option-title">PDF Report</div>
+                    </div>
+                    <div class="export-option-description">
+                        Export as PDF document. Best for sharing and printing.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelExport">Cancel</button>
+                <button class="btn-primary" id="confirmExport">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span id="toastMessage"></span>
+        <button onclick="closeToast()" style="background:none;border:none;color:white;cursor:pointer;font-size:20px;margin-left:10px;">&times;</button>
     </div>
 
     <main class="container">
@@ -429,19 +680,8 @@
             expensesChart: null,
             moneyFlowChart: null
         };
+        let selectedExportFormat = 'csv';
         
-        // Currency flags mapping
-        const currencyFlags = {
-            'USD': '🇺🇸',
-            'EUR': '🇪🇺',
-            'GBP': '🇬🇧',
-            'CAD': '🇨🇦',
-            'AUD': '🇦🇺',
-            'JPY': '🇯🇵',
-            'CNY': '🇨🇳',
-            'INR': '🇮🇳'
-        };
-
         // Format currency
         function formatCurrency(amount) {
             if (amount === null || amount === undefined || isNaN(amount)) {
@@ -454,6 +694,27 @@
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(amount);
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            if (toast && toastMessage) {
+                toastMessage.textContent = message;
+                toast.className = 'toast ' + type;
+                toast.classList.add('show');
+                
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+        
+        function closeToast() {
+            document.getElementById('toast').classList.remove('show');
         }
         
         // Check authentication
@@ -581,9 +842,6 @@
         function calculateReportData() {
             const { incomeSources, expenses } = parseProfileData();
             
-            console.log('Income sources:', incomeSources);
-            console.log('Expenses:', expenses);
-            
             // Calculate totals
             let totalIncome = 0;
             let totalExpenses = 0;
@@ -658,7 +916,6 @@
             destroyCharts(); // Clear existing charts
             
             const reportData = calculateReportData();
-            console.log('Report data:', reportData);
             
             // Create Income Sources Chart
             const incomeCtx = document.getElementById('incomeSourcesChart');
@@ -754,7 +1011,6 @@
             // Create Money Flow Chart
             const flowCtx = document.getElementById('moneyFlowChart');
             if (flowCtx) {
-                // Always create this chart even with zero data
                 charts.moneyFlowChart = new Chart(flowCtx, {
                     type: 'bar',
                     data: {
@@ -811,8 +1067,211 @@
             }
         }
         
+        // Export functions
+        function exportToCSV() {
+            try {
+                const reportData = calculateReportData();
+                const date = new Date().toISOString().slice(0, 10);
+                
+                // Create CSV content
+                let csvContent = "FlowLy Financial Report\n";
+                csvContent += `Generated: ${new Date().toLocaleDateString()}\n`;
+                csvContent += `Currency: ${userCurrency}\n\n`;
+                
+                // Income section
+                csvContent += "INCOME SOURCES\n";
+                csvContent += "Source,Amount\n";
+                Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
+                    csvContent += `${source},${amount}\n`;
+                });
+                csvContent += `Total Income,${reportData.totalIncome}\n\n`;
+                
+                // Expenses section
+                csvContent += "EXPENSES\n";
+                csvContent += "Category,Amount\n";
+                Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
+                    csvContent += `${category},${amount}\n`;
+                });
+                csvContent += `Total Expenses,${reportData.totalExpenses}\n\n`;
+                
+                // Summary section
+                csvContent += "FINANCIAL SUMMARY\n";
+                csvContent += "Metric,Amount\n";
+                csvContent += `Money In,${reportData.totalIncome}\n`;
+                csvContent += `Money Out,${reportData.totalExpenses}\n`;
+                csvContent += `Net Cash Flow,${reportData.netFlow}\n`;
+                
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `FlowLy_Report_${date}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                return true;
+            } catch (error) {
+                console.error('Error exporting to CSV:', error);
+                return false;
+            }
+        }
+        
+        function exportToExcel() {
+            try {
+                const reportData = calculateReportData();
+                const date = new Date().toISOString().slice(0, 10);
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                wb.Props = {
+                    Title: "FlowLy Financial Report",
+                    Subject: "Financial Report",
+                    Author: "FlowLy",
+                    CreatedDate: new Date()
+                };
+                
+                // Income sheet
+                const incomeData = [
+                    ["Income Sources"],
+                    ["Source", "Amount"]
+                ];
+                Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
+                    incomeData.push([source, amount]);
+                });
+                incomeData.push(["Total Income", reportData.totalIncome]);
+                
+                const incomeWs = XLSX.utils.aoa_to_sheet(incomeData);
+                XLSX.utils.book_append_sheet(wb, incomeWs, "Income");
+                
+                // Expenses sheet
+                const expenseData = [
+                    ["Expenses"],
+                    ["Category", "Amount"]
+                ];
+                Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
+                    expenseData.push([category, amount]);
+                });
+                expenseData.push(["Total Expenses", reportData.totalExpenses]);
+                
+                const expenseWs = XLSX.utils.aoa_to_sheet(expenseData);
+                XLSX.utils.book_append_sheet(wb, expenseWs, "Expenses");
+                
+                // Summary sheet
+                const summaryData = [
+                    ["Financial Summary"],
+                    ["Metric", "Amount"],
+                    ["Money In", reportData.totalIncome],
+                    ["Money Out", reportData.totalExpenses],
+                    ["Net Cash Flow", reportData.netFlow]
+                ];
+                
+                const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+                
+                // Generate and download file
+                XLSX.writeFile(wb, `FlowLy_Report_${date}.xlsx`);
+                return true;
+            } catch (error) {
+                console.error('Error exporting to Excel:', error);
+                return false;
+            }
+        }
+        
+        function exportToPDF() {
+            try {
+                const reportData = calculateReportData();
+                const date = new Date().toISOString().slice(0, 10);
+                
+                // Initialize PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Title
+                doc.setFontSize(20);
+                doc.text("FlowLy Financial Report", 20, 20);
+                doc.setFontSize(12);
+                doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 30);
+                doc.text(`Currency: ${userCurrency}`, 20, 37);
+                
+                let yPos = 50;
+                
+                // Income section
+                doc.setFontSize(16);
+                doc.text("Income Sources", 20, yPos);
+                yPos += 10;
+                
+                // Income table
+                const incomeTable = [["Source", "Amount"]];
+                Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
+                    incomeTable.push([source, formatCurrency(amount)]);
+                });
+                incomeTable.push(["Total Income", formatCurrency(reportData.totalIncome)]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [incomeTable[0]],
+                    body: incomeTable.slice(1),
+                    theme: 'striped',
+                    headStyles: { fillColor: [46, 204, 113] }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 15;
+                
+                // Expenses section
+                doc.setFontSize(16);
+                doc.text("Expenses", 20, yPos);
+                yPos += 10;
+                
+                // Expenses table
+                const expenseTable = [["Category", "Amount"]];
+                Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
+                    expenseTable.push([category, formatCurrency(amount)]);
+                });
+                expenseTable.push(["Total Expenses", formatCurrency(reportData.totalExpenses)]);
+                
+                doc.autoTable({
+                    startY: yPos,
+                    head: [expenseTable[0]],
+                    body: expenseTable.slice(1),
+                    theme: 'striped',
+                    headStyles: { fillColor: [231, 76, 60] }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 15;
+                
+                // Summary section
+                doc.setFontSize(16);
+                doc.text("Financial Summary", 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(12);
+                doc.text(`Money In: ${formatCurrency(reportData.totalIncome)}`, 20, yPos);
+                yPos += 8;
+                doc.text(`Money Out: ${formatCurrency(reportData.totalExpenses)}`, 20, yPos);
+                yPos += 8;
+                doc.setTextColor(reportData.netFlow >= 0 ? 46 : 231, reportData.netFlow >= 0 ? 204 : 76, reportData.netFlow >= 0 ? 113 : 60);
+                doc.text(`Net Cash Flow: ${formatCurrency(reportData.netFlow)}`, 20, yPos);
+                
+                // Footer
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(8);
+                doc.text("Generated by FlowLy - Cash Flow Management", 105, 285, null, null, "center");
+                
+                // Save PDF
+                doc.save(`FlowLy_Report_${date}.pdf`);
+                return true;
+            } catch (error) {
+                console.error('Error exporting to PDF:', error);
+                return false;
+            }
+        }
+        
         // Setup event listeners
         function setupEventListeners() {
+            // Refresh button
             const refreshBtn = document.getElementById('refreshBtn');
             if (refreshBtn) {
                 refreshBtn.addEventListener('click', async () => {
@@ -824,9 +1283,101 @@
                     
                     setTimeout(() => {
                         refreshBtn.disabled = false;
-                        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
+                        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
                     }, 500);
                 });
+            }
+            
+            // Export button
+            const exportBtn = document.getElementById('exportBtn');
+            const exportModal = document.getElementById('exportModal');
+            const closeModal = document.getElementById('closeModal');
+            const cancelExport = document.getElementById('cancelExport');
+            const confirmExport = document.getElementById('confirmExport');
+            
+            // Open export modal
+            if (exportBtn) {
+                exportBtn.addEventListener('click', () => {
+                    exportModal.classList.add('active');
+                });
+            }
+            
+            // Close export modal
+            if (closeModal) {
+                closeModal.addEventListener('click', () => {
+                    exportModal.classList.remove('active');
+                });
+            }
+            
+            // Cancel export
+            if (cancelExport) {
+                cancelExport.addEventListener('click', () => {
+                    exportModal.classList.remove('active');
+                });
+            }
+            
+            // Close modal on outside click
+            if (exportModal) {
+                exportModal.addEventListener('click', (e) => {
+                    if (e.target === exportModal) {
+                        exportModal.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Export option selection
+            const exportOptions = document.querySelectorAll('.export-option');
+            exportOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    exportOptions.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    selectedExportFormat = option.dataset.format;
+                });
+            });
+            
+            // Confirm export
+            if (confirmExport) {
+                confirmExport.addEventListener('click', async () => {
+                    const originalText = confirmExport.innerHTML;
+                    confirmExport.disabled = true;
+                    confirmExport.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+                    
+                    let success = false;
+                    
+                    try {
+                        switch(selectedExportFormat) {
+                            case 'csv':
+                                success = exportToCSV();
+                                break;
+                            case 'excel':
+                                success = exportToExcel();
+                                break;
+                            case 'pdf':
+                                success = exportToPDF();
+                                break;
+                        }
+                        
+                        if (success) {
+                            showToast(`Report exported as ${selectedExportFormat.toUpperCase()} successfully!`);
+                            exportModal.classList.remove('active');
+                        } else {
+                            showToast('Failed to export report. Please try again.', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Export error:', error);
+                        showToast('Export failed: ' + error.message, 'error');
+                    } finally {
+                        setTimeout(() => {
+                            confirmExport.disabled = false;
+                            confirmExport.innerHTML = originalText;
+                        }, 500);
+                    }
+                });
+            }
+            
+            // Initialize first export option as selected
+            if (exportOptions.length > 0) {
+                exportOptions[0].classList.add('selected');
             }
         }
         
@@ -836,15 +1387,12 @@
             
             // Check authentication
             const user = await checkAuth();
-            if (!user) {
-                console.log('Authentication failed');
-                return;
-            }
+            if (!user) return;
             
             // Load user profile
             await loadUserProfile();
             
-            // Create charts with real data
+            // Create charts
             createCharts();
             
             // Setup event listeners
