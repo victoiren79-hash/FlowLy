@@ -599,6 +599,74 @@ const actionStyles = `
 .btn-add:hover {
     background: #0d966d;
 }
+
+/* Notification Settings Styles */
+.notification-settings {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.notification-settings h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #111827;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-settings label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.notification-settings input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.notification-settings select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    margin: 8px 0;
+}
+
+.notification-settings select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.notification-settings button {
+    margin-top: 10px;
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notification-settings button:hover {
+    background: #1d4ed8;
+}
 `;
 
 // Add the action styles to the document
@@ -817,50 +885,189 @@ function showErrorDialog(title, message) {
     });
 }
 
-// Load and display real data from onboarding
-async function loadDashboardData() {
+// ============================================
+// NOTIFICATION SETTINGS FUNCTIONS
+// ============================================
+
+// Track notification preferences and sent history in Supabase
+async function getUserNotificationSettings(userId) {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) {
-            console.log('No user found in loadDashboardData');
-            hideLoading();
-            showErrorOnPage('Please sign in to view your dashboard.');
-            return;
-        }
-
-        const { data: profile, error } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from('user_profiles')
-            .select('*')
-            .eq('id', user.id)
+            .select('notification_settings, last_notifications_sent')
+            .eq('id', userId)
             .single();
-
-        if (error) {
-            console.error('Error loading profile:', error);
-            hideLoading();
             
-            // If profile doesn't exist, show onboarding link
-            if (error.code === 'PGRST116') {
-                showErrorOnPage('Please complete onboarding first.');
-                return;
-            }
-            
-            showErrorDialog('Error Loading Dashboard', 'Failed to load your financial data. Please try again.');
-            return;
-        }
-
-        // Extract currency from profile (default to USD if not set)
-        const currency = profile.currency || 'USD';
+        if (error) throw error;
         
-        setTimeout(() => {
-            // Pass currency to update function
-            updateDashboardWithRealData(profile, currency, user);
-            hideLoading();
-        }, 500);
-        
+        return {
+            settings: data.notification_settings || {
+                low_balance: true,
+                shortfall: true,
+                weekly_summary: true,
+                frequency: 'daily' // daily, weekly, critical-only
+            },
+            lastSent: data.last_notifications_sent || {}
+        };
     } catch (error) {
-        console.error('Error loading dashboard data:', error);
+        console.error('Error getting notification settings:', error);
+        return {
+            settings: {
+                low_balance: true,
+                shortfall: true,
+                weekly_summary: true,
+                frequency: 'daily'
+            },
+            lastSent: {}
+        };
+    }
+}
+
+// Update last sent timestamp in database
+async function updateLastNotificationSent(userId, notificationType) {
+    try {
+        const { data } = await supabaseClient
+            .from('user_profiles')
+            .select('last_notifications_sent')
+            .eq('id', userId)
+            .single();
+            
+        const lastSent = data?.last_notifications_sent || {};
+        lastSent[notificationType] = new Date().toISOString();
+        
+        const { error } = await supabaseClient
+            .from('user_profiles')
+            .update({ last_notifications_sent: lastSent })
+            .eq('id', userId);
+            
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('Error updating last notification:', error);
+        return false;
+    }
+}
+
+// Check if we should send notification based on frequency
+function shouldSendNotification(lastSentTimestamp, frequency) {
+    if (!lastSentTimestamp) return true;
+    
+    const lastSent = new Date(lastSentTimestamp);
+    const now = new Date();
+    const hoursSinceLast = (now - lastSent) / (1000 * 60 * 60);
+    
+    switch(frequency) {
+        case 'daily':
+            return hoursSinceLast >= 24;
+        case 'weekly':
+            return hoursSinceLast >= 168; // 7 days
+        case 'critical-only':
+            return false; // Only send for critical situations (handled separately)
+        default:
+            return hoursSinceLast >= 24;
+    }
+}
+
+// Add notification settings UI
+function addNotificationSettingsUI() {
+    // Check if already exists
+    if (document.querySelector('.notification-settings')) return;
+    
+    const settingsHTML = `
+        <div class="notification-settings">
+            <h3>📧 Email Notification Settings</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <label>
+                    <input type="checkbox" id="lowBalanceNotifications" checked>
+                    Low balance alerts
+                </label>
+                <label>
+                    <input type="checkbox" id="shortfallNotifications" checked>
+                    Cash shortfall warnings
+                </label>
+                <label>
+                    <input type="checkbox" id="weeklySummaryNotifications" checked>
+                    Weekly summaries
+                </label>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Frequency:</label>
+                    <select id="notificationFrequency">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="critical-only">Critical Only</option>
+                    </select>
+                </div>
+                <button id="saveNotificationSettings">Save Settings</button>
+            </div>
+        </div>
+    `;
+    
+    // Add to dashboard
+    const dashboardContent = document.querySelector('.main-content');
+    if (dashboardContent) {
+        dashboardContent.insertAdjacentHTML('afterbegin', settingsHTML);
+        
+        // Load saved settings
+        loadNotificationSettings();
+        
+        // Save button handler
+        document.getElementById('saveNotificationSettings').addEventListener('click', saveNotificationSettings);
+    }
+}
+
+async function loadNotificationSettings() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+    
+    try {
+        const { settings } = await getUserNotificationSettings(user.id);
+        
+        const lowBalanceCheckbox = document.getElementById('lowBalanceNotifications');
+        const shortfallCheckbox = document.getElementById('shortfallNotifications');
+        const weeklySummaryCheckbox = document.getElementById('weeklySummaryNotifications');
+        const frequencySelect = document.getElementById('notificationFrequency');
+        
+        if (lowBalanceCheckbox) lowBalanceCheckbox.checked = settings.low_balance;
+        if (shortfallCheckbox) shortfallCheckbox.checked = settings.shortfall;
+        if (weeklySummaryCheckbox) weeklySummaryCheckbox.checked = settings.weekly_summary;
+        if (frequencySelect) frequencySelect.value = settings.frequency;
+    } catch (error) {
+        console.error('Error loading notification settings:', error);
+    }
+}
+
+async function saveNotificationSettings() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+    
+    const settings = {
+        low_balance: document.getElementById('lowBalanceNotifications').checked,
+        shortfall: document.getElementById('shortfallNotifications').checked,
+        weekly_summary: document.getElementById('weeklySummaryNotifications').checked,
+        frequency: document.getElementById('notificationFrequency').value
+    };
+    
+    try {
+        showLoading('Saving settings...');
+        const { error } = await supabaseClient
+            .from('user_profiles')
+            .update({ notification_settings: settings })
+            .eq('id', user.id);
+            
+        if (error) throw error;
+        
         hideLoading();
-        showErrorDialog('Error', 'An error occurred while loading your dashboard. Please refresh the page.');
+        showDialog({
+            type: 'success',
+            title: 'Settings Saved',
+            message: 'Your notification preferences have been updated.',
+            confirmText: 'Got it!',
+            showCancel: false
+        });
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        hideLoading();
+        showErrorDialog('Error', 'Failed to save settings. Please try again.');
     }
 }
 
@@ -914,45 +1121,70 @@ async function sendLowBalanceEmail(userEmail, userName, balance, threshold, curr
     }
 }
 
-// Check and send low balance notification - FIXED VERSION
+// FIXED: Check and send low balance notification
 async function checkAndSendLowBalanceNotification(profile, currency, user) {
-    const LOW_BALANCE_THRESHOLD = 1000; // $1000 threshold
-    
-    // Debug: Log current values
-    console.log('🔍 Checking low balance notification:');
-    console.log('  - Current balance:', profile.current_balance);
-    console.log('  - Threshold:', LOW_BALANCE_THRESHOLD);
-    console.log('  - Condition (balance < threshold?):', profile.current_balance < LOW_BALANCE_THRESHOLD);
-    
-    // FIX: Ensure balance is a number and compare correctly
+    const LOW_BALANCE_THRESHOLD = 1000;
     const currentBalance = parseFloat(profile.current_balance) || 0;
     
-    // ONLY send if balance is BELOW the threshold
+    console.log('🔍 Checking low balance notification:');
+    console.log('  - Current balance:', currentBalance);
+    console.log('  - Threshold:', LOW_BALANCE_THRESHOLD);
+    console.log('  - Should send?', currentBalance < LOW_BALANCE_THRESHOLD);
+    
+    // CRITICAL FIX: Only send if balance is BELOW threshold
     if (currentBalance < LOW_BALANCE_THRESHOLD) {
-        console.log('⚠️ Low balance detected!');
+        console.log('⚠️ Low balance detected! Balance is below threshold.');
         
-        // Check if we sent this recently (using localStorage)
-        const lastSentKey = `lastLowBalanceEmail_${user.id}`;
-        const lastSent = localStorage.getItem(lastSentKey);
-        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+        // Get user notification settings
+        const { settings, lastSent } = await getUserNotificationSettings(user.id);
         
-        if (!lastSent || parseInt(lastSent) < twentyFourHoursAgo) {
-            console.log('📧 Sending low balance email...');
-            const sent = await sendLowBalanceEmail(
-                user.email,
-                user.user_metadata?.name || user.email,
-                currentBalance,
-                LOW_BALANCE_THRESHOLD,
-                currency
-            );
-            
-            if (sent) {
-                localStorage.setItem(lastSentKey, Date.now().toString());
-                console.log('✅ Low balance email sent to:', user.email);
-                return true;
+        // Check if user wants low balance notifications
+        if (!settings.low_balance) {
+            console.log('🔕 Low balance notifications disabled by user');
+            return false;
+        }
+        
+        // Check frequency settings
+        if (settings.frequency === 'critical-only') {
+            // For critical-only mode, only send if VERY low balance
+            if (currentBalance > LOW_BALANCE_THRESHOLD * 0.5) {
+                console.log('🔕 Critical-only mode: Balance not critical enough');
+                return false;
             }
-        } else {
-            console.log('⏰ Low balance email already sent recently');
+        }
+        
+        // Check when we last sent this notification
+        const lastLowBalanceSent = lastSent.low_balance;
+        if (!shouldSendNotification(lastLowBalanceSent, settings.frequency)) {
+            console.log('⏰ Low balance email already sent recently (based on frequency settings)');
+            return false;
+        }
+        
+        // Actually send the email
+        console.log('📧 Sending low balance email...');
+        const sent = await sendLowBalanceEmail(
+            user.email,
+            user.user_metadata?.name || user.email,
+            currentBalance,
+            LOW_BALANCE_THRESHOLD,
+            currency
+        );
+        
+        if (sent) {
+            // Update in database, not localStorage
+            await updateLastNotificationSent(user.id, 'low_balance');
+            console.log('✅ Low balance email sent to:', user.email);
+            
+            // Also show in-app notification
+            showDialog({
+                type: 'warning',
+                title: 'Low Balance Alert',
+                message: `Your balance (${formatCurrency(currentBalance, currency)}) is below the ${formatCurrency(LOW_BALANCE_THRESHOLD, currency)} threshold. An email has been sent to ${user.email}.`,
+                confirmText: 'Got it',
+                showCancel: false
+            });
+            
+            return true;
         }
     } else {
         console.log('✅ Balance is above threshold, no email needed');
@@ -961,7 +1193,7 @@ async function checkAndSendLowBalanceNotification(profile, currency, user) {
     return false;
 }
 
-// Check and send shortfall notification
+// FIXED: Check and send shortfall notification
 async function checkAndSendShortfallNotification(profile, currency, user) {
     const totalIncome = profile.income_sources?.reduce((sum, source) => sum + (parseFloat(source.amount) || 0), 0) || 0;
     const totalExpenses = profile.expenses?.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0) || 0;
@@ -969,51 +1201,81 @@ async function checkAndSendShortfallNotification(profile, currency, user) {
     const weeklyNetCashFlow = monthlyNetCashFlow / 4.33;
     const currentBalance = parseFloat(profile.current_balance) || 0;
     
-    // ONLY send if we have NEGATIVE cash flow (burning cash)
+    // Only send if we have NEGATIVE cash flow (burning cash)
     if (weeklyNetCashFlow < 0) {
         const daysToShortfall = Math.abs(currentBalance / (weeklyNetCashFlow / 7));
+        
+        console.log('🔍 Checking shortfall notification:');
+        console.log('  - Weekly cash flow:', weeklyNetCashFlow);
+        console.log('  - Days to shortfall:', daysToShortfall);
+        console.log('  - Should send?', daysToShortfall <= 14);
         
         // Only alert if shortfall within 14 days
         if (daysToShortfall <= 14) {
             console.log('⚠️ Shortfall detected! Days to shortfall:', daysToShortfall);
             
-            const lastSentKey = `lastShortfallEmail_${user.id}`;
-            const lastSent = localStorage.getItem(lastSentKey);
-            const twelveHoursAgo = Date.now() - (12 * 60 * 60 * 1000);
+            // Get user notification settings
+            const { settings, lastSent } = await getUserNotificationSettings(user.id);
             
-            if (!lastSent || parseInt(lastSent) < twelveHoursAgo) {
-                console.log('📧 Sending shortfall email...');
-                
-                // Use a different template for shortfall if available, otherwise use same template
-                const templateParams = {
-                    name: user.user_metadata?.name || user.email,
-                    balance: formatCurrency(currentBalance, currency),
-                    threshold: `${Math.ceil(daysToShortfall)} days`,
-                    dashboard_url: window.location.origin + '/dashboard.html',
-                    to_email: user.email,
-                    warning_type: 'cash_shortfall'
-                };
-                
-                try {
-                    initEmailJS();
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    const response = await emailjs.send(
-                        EMAILJS_CONFIG.serviceId,
-                        EMAILJS_CONFIG.templateId,
-                        templateParams
-                    );
-                    
-                    if (response.status === 200) {
-                        localStorage.setItem(lastSentKey, Date.now().toString());
-                        console.log('✅ Shortfall email sent to:', user.email);
-                        return true;
-                    }
-                } catch (error) {
-                    console.error('❌ Shortfall email failed:', error);
-                }
-            } else {
+            // Check if user wants shortfall notifications
+            if (!settings.shortfall) {
+                console.log('🔕 Shortfall notifications disabled by user');
+                return false;
+            }
+            
+            // For critical-only mode, only send if VERY imminent (within 7 days)
+            if (settings.frequency === 'critical-only' && daysToShortfall > 7) {
+                console.log('🔕 Critical-only mode: Shortfall not imminent enough');
+                return false;
+            }
+            
+            // Check when we last sent this notification
+            const lastShortfallSent = lastSent.shortfall;
+            if (!shouldSendNotification(lastShortfallSent, settings.frequency)) {
                 console.log('⏰ Shortfall email already sent recently');
+                return false;
+            }
+            
+            // Send email
+            const templateParams = {
+                name: user.user_metadata?.name || user.email,
+                balance: formatCurrency(currentBalance, currency),
+                threshold: `${Math.ceil(daysToShortfall)} days`,
+                dashboard_url: window.location.origin + '/dashboard.html',
+                to_email: user.email,
+                warning_type: 'cash_shortfall'
+            };
+            
+            try {
+                initEmailJS();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const response = await emailjs.send(
+                    EMAILJS_CONFIG.serviceId,
+                    EMAILJS_CONFIG.templateId,
+                    templateParams
+                );
+                
+                if (response.status === 200) {
+                    await updateLastNotificationSent(user.id, 'shortfall');
+                    console.log('✅ Shortfall email sent to:', user.email);
+                    
+                    // Show in-app notification
+                    showDialog({
+                        type: 'danger',
+                        title: 'Cash Shortfall Warning',
+                        message: `Based on current trends, you may run out of cash in ${Math.ceil(daysToShortfall)} days. An email has been sent with details.`,
+                        confirmText: 'Review Now',
+                        onConfirm: () => {
+                            // Focus on forecast section
+                            document.querySelector('.forecast-insight')?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    });
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.error('❌ Shortfall email failed:', error);
             }
         }
     }
@@ -1021,25 +1283,41 @@ async function checkAndSendShortfallNotification(profile, currency, user) {
     return false;
 }
 
-// Check and send weekly summary (runs every Monday)
+// FIXED: Check and send weekly summary
 async function checkAndSendWeeklySummary(profile, currency, user) {
+    // Get user notification settings first
+    const { settings, lastSent } = await getUserNotificationSettings(user.id);
+    
+    // Check if user wants weekly summaries
+    if (!settings.weekly_summary) {
+        console.log('🔕 Weekly summaries disabled by user');
+        return false;
+    }
+    
+    // Check frequency - only send weekly summaries if frequency is 'weekly'
+    if (settings.frequency !== 'weekly') {
+        console.log('🔕 Weekly summaries only sent for users with weekly frequency setting');
+        return false;
+    }
+    
     // Only send on Mondays
     const today = new Date();
-    if (today.getDay() !== 1) {
+    if (today.getDay() !== 1) { // 1 = Monday
         console.log('📅 Not Monday, skipping weekly summary');
-        return false; // 0 = Sunday, 1 = Monday
+        return false;
     }
     
     console.log('📅 Monday detected, checking weekly summary...');
     
     // Check if we already sent this week
-    const lastSentKey = `lastWeeklySummary_${user.id}`;
-    const lastSent = localStorage.getItem(lastSentKey);
-    const thisMonday = getStartOfWeek();
-    
-    if (lastSent && parseInt(lastSent) >= thisMonday.getTime()) {
-        console.log('⏰ Weekly summary already sent this week');
-        return false; // Already sent this week
+    const lastWeeklySent = lastSent.weekly_summary;
+    if (lastWeeklySent) {
+        const lastSentDate = new Date(lastWeeklySent);
+        const daysSince = (today - lastSentDate) / (1000 * 60 * 60 * 24);
+        if (daysSince < 7) {
+            console.log('⏰ Weekly summary already sent this week');
+            return false;
+        }
     }
     
     const totalIncome = profile.income_sources?.reduce((sum, source) => sum + (parseFloat(source.amount) || 0), 0) || 0;
@@ -1074,8 +1352,18 @@ async function checkAndSendWeeklySummary(profile, currency, user) {
         );
         
         if (response.status === 200) {
-            localStorage.setItem(lastSentKey, Date.now().toString());
+            await updateLastNotificationSent(user.id, 'weekly_summary');
             console.log('✅ Weekly summary email sent to:', user.email);
+            
+            // Show in-app notification
+            showDialog({
+                type: 'info',
+                title: 'Weekly Summary Sent',
+                message: `Your weekly financial summary has been sent to ${user.email}.`,
+                confirmText: 'Great!',
+                showCancel: false
+            });
+            
             return true;
         }
     } catch (error) {
@@ -1085,33 +1373,40 @@ async function checkAndSendWeeklySummary(profile, currency, user) {
     return false;
 }
 
-// Main notification check function
+// FIXED: Main notification check function
 async function checkAllNotifications(profile, currency, user) {
-    console.log('🔔 Starting notification checks...');
+    console.log('🔔 Starting notification checks with user preferences...');
     
     try {
-        // Check low balance
-        await checkAndSendLowBalanceNotification(profile, currency, user);
+        // Get user settings first
+        const { settings } = await getUserNotificationSettings(user.id);
         
-        // Check shortfall
-        await checkAndSendShortfallNotification(profile, currency, user);
+        // Only check notifications if user wants them
+        if (!settings.low_balance && !settings.shortfall && !settings.weekly_summary) {
+            console.log('🔕 All notifications disabled by user');
+            return;
+        }
         
-        // Check weekly summary
-        await checkAndSendWeeklySummary(profile, currency, user);
+        // Check low balance (if enabled)
+        if (settings.low_balance) {
+            await checkAndSendLowBalanceNotification(profile, currency, user);
+        }
+        
+        // Check shortfall (if enabled)
+        if (settings.shortfall) {
+            await checkAndSendShortfallNotification(profile, currency, user);
+        }
+        
+        // Check weekly summary (if enabled and frequency is weekly)
+        if (settings.weekly_summary && settings.frequency === 'weekly') {
+            await checkAndSendWeeklySummary(profile, currency, user);
+        }
         
         console.log('✅ All notification checks completed');
         
     } catch (error) {
         console.error('❌ Error checking notifications:', error);
     }
-}
-
-// Helper function to get start of week (Monday)
-function getStartOfWeek(date = new Date()) {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-    return new Date(d.setDate(diff));
 }
 
 // Test email function
@@ -1185,6 +1480,53 @@ window.testLowBalance = async function() {
 // ============================================
 // END EMAIL NOTIFICATION FUNCTIONS
 // ============================================
+
+// Load and display real data from onboarding
+async function loadDashboardData() {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+            console.log('No user found in loadDashboardData');
+            hideLoading();
+            showErrorOnPage('Please sign in to view your dashboard.');
+            return;
+        }
+
+        const { data: profile, error } = await supabaseClient
+            .from('user_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (error) {
+            console.error('Error loading profile:', error);
+            hideLoading();
+            
+            // If profile doesn't exist, show onboarding link
+            if (error.code === 'PGRST116') {
+                showErrorOnPage('Please complete onboarding first.');
+                return;
+            }
+            
+            showErrorDialog('Error Loading Dashboard', 'Failed to load your financial data. Please try again.');
+            return;
+        }
+
+        // Extract currency from profile (default to USD if not set)
+        const currency = profile.currency || 'USD';
+        
+        setTimeout(() => {
+            // Pass currency to update function
+            updateDashboardWithRealData(profile, currency, user);
+            hideLoading();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        hideLoading();
+        showErrorDialog('Error', 'An error occurred while loading your dashboard. Please refresh the page.');
+    }
+}
 
 // Update function signature to accept currency and user parameters
 function updateDashboardWithRealData(profile, currency, user) {
@@ -1483,59 +1825,59 @@ function updateTimelineMarkers(currentBalance, weeklyNetCashFlow, weeksOfRunway)
                 left: ${markerPosition}%;
                 top: -8px;
                 width: 2px;
-            height: 16px;
-            background: #ef4444;
-            z-index: 2;
-        `;
-        
-        const warningLabel = document.createElement('div');
-        warningLabel.style.cssText = `
-            position: absolute;
-            top: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: #ef4444;
-            white-space: nowrap;
-            font-weight: 600;
-        `;
-        
-        if (weeksOfRunway <= maxWeeksToShow) {
-            warningLabel.textContent = `${weeksOfRunway.toFixed(1)}w`;
-        } else {
-            warningLabel.textContent = `>${maxWeeksToShow}w`;
-        }
-        
-        warningMarker.appendChild(warningLabel);
-        timelineBar.appendChild(warningMarker);
-        
-        // Add a tooltip on hover
-        warningMarker.addEventListener('mouseenter', () => {
-            const tooltip = document.createElement('div');
-            tooltip.style.cssText = `
+                height: 16px;
+                background: #ef4444;
+                z-index: 2;
+            `;
+            
+            const warningLabel = document.createElement('div');
+            warningLabel.style.cssText = `
                 position: absolute;
-                top: -40px;
+                top: 18px;
                 left: 50%;
                 transform: translateX(-50%);
-                background: #111827;
-                color: white;
-                padding: 6px 10px;
-                border-radius: 6px;
-                font-size: 11px;
+                font-size: 10px;
+                color: #ef4444;
                 white-space: nowrap;
-                z-index: 100;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                font-weight: 600;
             `;
-            tooltip.textContent = `Cash runs out in ${weeksOfRunway.toFixed(1)} weeks`;
-            warningMarker.appendChild(tooltip);
             
-            warningMarker.addEventListener('mouseleave', () => {
-                if (tooltip.parentNode) {
-                    tooltip.parentNode.removeChild(tooltip);
-                }
-            }, { once: true });
-        });
-    }
+            if (weeksOfRunway <= maxWeeksToShow) {
+                warningLabel.textContent = `${weeksOfRunway.toFixed(1)}w`;
+            } else {
+                warningLabel.textContent = `>${maxWeeksToShow}w`;
+            }
+            
+            warningMarker.appendChild(warningLabel);
+            timelineBar.appendChild(warningMarker);
+            
+            // Add a tooltip on hover
+            warningMarker.addEventListener('mouseenter', () => {
+                const tooltip = document.createElement('div');
+                tooltip.style.cssText = `
+                    position: absolute;
+                    top: -40px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: #111827;
+                    color: white;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    white-space: nowrap;
+                    z-index: 100;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                `;
+                tooltip.textContent = `Cash runs out in ${weeksOfRunway.toFixed(1)} weeks`;
+                warningMarker.appendChild(tooltip);
+                
+                warningMarker.addEventListener('mouseleave', () => {
+                    if (tooltip.parentNode) {
+                        tooltip.parentNode.removeChild(tooltip);
+                    }
+                }, { once: true });
+            });
+        }
     }
 }
 
@@ -2249,6 +2591,9 @@ async function initializeDashboard() {
         }
         
         console.log('✅ User authenticated:', session.user.email);
+        
+        // Add notification settings UI
+        addNotificationSettingsUI();
         
         // Load dashboard data
         await loadDashboardData();
