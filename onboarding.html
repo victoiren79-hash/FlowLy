@@ -249,8 +249,8 @@
                 <div id="incomeSources">
                     <div class="income-source">
                         <div class="form-grid">
-                            <div class="form-group"><label>Source Name</label><input type="text" class="income-name" placeholder="Product sales etc." required></div>
-                            <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="income-amount" placeholder="0.00" required></div></div>
+                            <div class="form-group"><label>Source Name</label><input type="text" class="income-name" placeholder="Product sales etc."></div>
+                            <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="income-amount" placeholder="0.00"></div></div>
                             <div class="form-group"><label>Type</label><select class="income-type"><option value="salary">Salary</option><option value="freelance">Freelance</option><option value="investment">Investment</option><option value="rental">Rental</option><option value="other">Other</option></select></div>
                         </div>
                     </div>
@@ -261,8 +261,8 @@
                 <div id="expenseItems">
                     <div class="expense-item">
                         <div class="form-grid">
-                            <div class="form-group"><label>Expense Name</label><input type="text" class="expense-name" placeholder="Subscriptions, etc." required></div>
-                            <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="expense-amount" placeholder="0.00" required></div></div>
+                            <div class="form-group"><label>Expense Name</label><input type="text" class="expense-name" placeholder="Subscriptions, etc."></div>
+                            <div class="form-group"><label>Monthly Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="expense-amount" placeholder="0.00"></div></div>
                             <div class="form-group"><label>Category</label><select class="expense-category"><option value="housing">Housing</option><option value="utilities">Utilities</option><option value="food">Food & Dining</option><option value="transportation">Transportation</option><option value="entertainment">Entertainment</option><option value="business">Business</option><option value="other">Other</option></select></div>
                         </div>
                     </div>
@@ -277,10 +277,10 @@
                 <div id="invoiceItems">
                     <div class="invoice-item">
                         <div class="form-grid">
-                            <div class="form-group"><label>Invoice #</label><input type="text" class="invoice-number" placeholder="INV-001" required></div>
-                            <div class="form-group"><label>Client Name</label><input type="text" class="invoice-client" placeholder="Client Company" required></div>
-                            <div class="form-group"><label>Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="invoice-amount" placeholder="0.00" required></div></div>
-                            <div class="form-group"><label>Due Date</label><input type="date" class="invoice-due-date" required></div>
+                            <div class="form-group"><label>Invoice #</label><input type="text" class="invoice-number" placeholder="INV-001"></div>
+                            <div class="form-group"><label>Client Name</label><input type="text" class="invoice-client" placeholder="Client Company"></div>
+                            <div class="form-group"><label>Amount</label><div class="currency-input"><span class="currency-symbol">$</span><input type="number" step="0.01" class="invoice-amount" placeholder="0.00"></div></div>
+                            <div class="form-group"><label>Due Date</label><input type="date" class="invoice-due-date"></div>
                             <div class="form-group full-width"><label>Description</label><textarea class="invoice-description" rows="2"></textarea></div>
                         </div>
                     </div>
@@ -370,27 +370,30 @@
         }
 
         function updateProgress() {
+            // Update progress steps
             document.querySelectorAll('.progress-step').forEach((el, i) => {
                 el.classList.toggle('active', i + 1 === currentSection);
             });
             
+            // Show/hide sections
             document.querySelectorAll('.form-section').forEach((el, i) => {
                 el.classList.toggle('active', i + 1 === currentSection);
             });
             
+            // Update buttons
             document.getElementById('prevBtn').disabled = currentSection === 1;
             
             if (currentSection === totalSections) {
                 document.getElementById('nextBtn').style.display = 'none';
-                document.getElementById('prevBtn').style.display = 'inline-block';
             } else {
                 document.getElementById('nextBtn').style.display = 'inline-block';
-                document.getElementById('prevBtn').style.display = 'inline-block';
                 document.getElementById('nextBtn').textContent = 'Next';
             }
         }
 
         function validateSection(section) {
+            console.log('Validating section:', section);
+            
             if (section === 1) {
                 const nameInput = document.getElementById('fullName');
                 const emailInput = document.getElementById('userEmail');
@@ -413,27 +416,34 @@
                 return true;
             }
             
+            // Sections 2 and 3 are optional - no validation needed
             return true;
         }
 
         function nextSection() {
+            console.log('Next button clicked, current section:', currentSection);
+            
+            // Validate current section before proceeding
             if (!validateSection(currentSection)) {
+                console.log('Validation failed');
                 return;
             }
             
-            if (currentSection === totalSections - 1) {
-                // When moving to payment section (section 4), collect all data first
-                collectAllData();
-                initializePaddle(); // Initialize Paddle when reaching payment section
-                currentSection = totalSections;
-                updateProgress();
-            } else if (currentSection < totalSections) {
+            if (currentSection < totalSections) {
                 currentSection++;
+                console.log('Moving to section:', currentSection);
                 updateProgress();
+                
+                // If we're moving to payment section, collect data and initialize Paddle
+                if (currentSection === totalSections) {
+                    collectAllData();
+                    initializePaddle();
+                }
             }
         }
 
         function previousSection() {
+            console.log('Previous button clicked, current section:', currentSection);
             if (currentSection > 1) { 
                 currentSection--; 
                 updateProgress(); 
@@ -441,9 +451,9 @@
         }
 
         function collectAllData() {
-            // These are already collected in validateSection()
-            // fullName and userEmail are already set from validation
+            console.log('Collecting all data');
             
+            // Collect basic info
             tempOnboardingData = {
                 full_name: fullName,
                 email: userEmail,
@@ -454,47 +464,51 @@
                 invoices: []
             };
 
-            // Collect income sources
-            document.querySelectorAll('.income-source').forEach(s => {
+            // Collect income sources (only if filled)
+            document.querySelectorAll('.income-source').forEach((s, index) => {
                 const name = s.querySelector('.income-name').value.trim();
                 const amount = s.querySelector('.income-amount').value.trim();
-                if (name && amount) {
+                if (name || amount) {
                     tempOnboardingData.income_sources.push({
-                        name: name,
-                        amount: parseFloat(amount),
-                        type: s.querySelector('.income-type').value
+                        name: name || `Income ${index + 1}`,
+                        amount: parseFloat(amount) || 0,
+                        type: s.querySelector('.income-type').value || 'other'
                     });
                 }
             });
 
-            // Collect expenses
-            document.querySelectorAll('.expense-item').forEach(e => {
+            // Collect expenses (only if filled)
+            document.querySelectorAll('.expense-item').forEach((e, index) => {
                 const name = e.querySelector('.expense-name').value.trim();
                 const amount = e.querySelector('.expense-amount').value.trim();
-                if (name && amount) {
+                if (name || amount) {
                     tempOnboardingData.expenses.push({
-                        name: name,
-                        amount: parseFloat(amount),
-                        category: e.querySelector('.expense-category').value
+                        name: name || `Expense ${index + 1}`,
+                        amount: parseFloat(amount) || 0,
+                        category: e.querySelector('.expense-category').value || 'other'
                     });
                 }
             });
 
-            // Collect invoices
-            document.querySelectorAll('.invoice-item').forEach(i => {
+            // Collect invoices (only if filled)
+            document.querySelectorAll('.invoice-item').forEach((i, index) => {
                 const num = i.querySelector('.invoice-number').value.trim();
-                if (num) {
+                const client = i.querySelector('.invoice-client').value.trim();
+                const amount = i.querySelector('.invoice-amount').value.trim();
+                
+                if (num || client || amount) {
                     tempOnboardingData.invoices.push({
-                        number: num,
-                        client: i.querySelector('.invoice-client').value.trim(),
-                        amount: parseFloat(i.querySelector('.invoice-amount').value || 0),
-                        due_date: i.querySelector('.invoice-due-date').value,
-                        description: i.querySelector('.invoice-description').value.trim(),
+                        number: num || `INV-${index + 1}`,
+                        client: client || `Client ${index + 1}`,
+                        amount: parseFloat(amount) || 0,
+                        due_date: i.querySelector('.invoice-due-date').value || '',
+                        description: i.querySelector('.invoice-description').value.trim() || '',
                         status: 'pending'
                     });
                 }
             });
 
+            console.log('Collected data:', tempOnboardingData);
             return true;
         }
 
@@ -509,13 +523,13 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Source Name</label>
-                        <input type="text" class="income-name" required>
+                        <input type="text" class="income-name" placeholder="Product sales etc.">
                     </div>
                     <div class="form-group">
                         <label>Monthly Amount</label>
                         <div class="currency-input">
                             <span class="currency-symbol">$</span>
-                            <input type="number" step="0.01" class="income-amount" required>
+                            <input type="number" step="0.01" class="income-amount" placeholder="0.00">
                         </div>
                     </div>
                     <div class="form-group">
@@ -543,13 +557,13 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Expense Name</label>
-                        <input type="text" class="expense-name" required>
+                        <input type="text" class="expense-name" placeholder="Subscriptions, etc.">
                     </div>
                     <div class="form-group">
                         <label>Monthly Amount</label>
                         <div class="currency-input">
                             <span class="currency-symbol">$</span>
-                            <input type="number" step="0.01" class="expense-amount" required>
+                            <input type="number" step="0.01" class="expense-amount" placeholder="0.00">
                         </div>
                     </div>
                     <div class="form-group">
@@ -579,17 +593,17 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Invoice #</label>
-                        <input type="text" class="invoice-number" required>
+                        <input type="text" class="invoice-number" placeholder="INV-001">
                     </div>
                     <div class="form-group">
                         <label>Client Name</label>
-                        <input type="text" class="invoice-client">
+                        <input type="text" class="invoice-client" placeholder="Client Company">
                     </div>
                     <div class="form-group">
                         <label>Amount</label>
                         <div class="currency-input">
                             <span class="currency-symbol">$</span>
-                            <input type="number" step="0.01" class="invoice-amount">
+                            <input type="number" step="0.01" class="invoice-amount" placeholder="0.00">
                         </div>
                     </div>
                     <div class="form-group">
@@ -598,7 +612,7 @@
                     </div>
                     <div class="form-group full-width">
                         <label>Description</label>
-                        <textarea class="invoice-description" rows="2"></textarea>
+                        <textarea class="invoice-description" rows="2" placeholder="Optional description"></textarea>
                     </div>
                 </div>`;
             
@@ -613,6 +627,9 @@
 
         // ====== PAYMENT ======
         document.getElementById('checkout-btn').addEventListener('click', () => {
+            console.log('Checkout button clicked');
+            
+            // Collect data first
             if (!collectAllData()) {
                 showAlert('Please fill in all required information', 'error');
                 return;
@@ -654,6 +671,8 @@
 
         // ====== SUCCESS: CREATE ACCOUNT ONLY NOW ======
         async function handlePaymentSuccess(eventData) {
+            console.log('Payment successful, creating account...');
+            
             try {
                 // Generate a random password
                 const password = Math.random().toString(36).slice(-8) + "A1!";
@@ -774,10 +793,24 @@
             document.querySelectorAll('.invoice-due-date').forEach(el => {
                 if (!el.value) el.valueAsDate = date;
             });
+            
+            // Set default current balance to 0
+            const balanceInput = document.getElementById('currentBalance');
+            if (balanceInput && !balanceInput.value) {
+                balanceInput.value = '0.00';
+            }
+            
+            // Initialize progress
+            updateProgress();
         });
 
-        // Initialize progress on load
-        updateProgress();
+        // Debug helper
+        window.debugData = function() {
+            console.log('Current section:', currentSection);
+            console.log('Full name:', fullName);
+            console.log('Email:', userEmail);
+            console.log('Temp data:', tempOnboardingData);
+        };
     </script>
 </body>
 </html>
