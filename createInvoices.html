@@ -577,29 +577,96 @@
     
     // Store user globally
     let currentUser = null;
+    let authRetryCount = 0;
+    const MAX_AUTH_RETRIES = 3;
 
-    // Check authentication on load
+    // Enhanced authentication with auto-refresh
     async function checkAuth() {
         try {
-            const { data: { user }, error } = await supabaseClient.auth.getUser();
+            console.log('Checking authentication...');
             
-            if (error) {
-                console.error('Auth error:', error);
-                alert('Authentication error: ' + error.message);
-                return false;
-            }
+            // Try to get current session
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
             
-            if (!user) {
-                alert('Please sign in to create invoices');
+            if (sessionError) {
+                console.error('Session error:', sessionError);
+                
+                // Check if it's an expired token
+                if (sessionError.message.includes('expired') || sessionError.message.includes('invalid JWT')) {
+                    console.log('Token expired or invalid, attempting refresh...');
+                    
+                    // Try to refresh the session
+                    const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
+                    
+                    if (refreshError) {
+                        console.error('Refresh failed:', refreshError);
+                        
+                        // If refresh fails, redirect to login
+                        if (authRetryCount < MAX_AUTH_RETRIES) {
+                            authRetryCount++;
+                            console.log(`Retrying auth (attempt ${authRetryCount})...`);
+                            return await checkAuth(); // Retry
+                        } else {
+                            // Too many retries, redirect to login
+                            console.log('Too many auth retries, redirecting to login');
+                            window.location.href = 'index.html';
+                            return false;
+                        }
+                    }
+                    
+                    console.log('Session refreshed successfully');
+                    currentUser = refreshData.user;
+                    return true;
+                }
+                
+                // Other session errors - redirect to login
                 window.location.href = 'index.html';
                 return false;
             }
             
-            currentUser = user;
-            console.log('User authenticated:', user.email);
+            if (!session) {
+                console.log('No active session found');
+                window.location.href = 'index.html';
+                return false;
+            }
+            
+            // Check if token is expired
+            const now = Math.floor(Date.now() / 1000);
+            if (session.expires_at && session.expires_at < now) {
+                console.log('Token is expired, refreshing...');
+                const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
+                
+                if (refreshError) {
+                    console.error('Failed to refresh expired token:', refreshError);
+                    window.location.href = 'index.html';
+                    return false;
+                }
+                
+                currentUser = refreshData.user;
+                console.log('Expired token refreshed');
+            } else {
+                currentUser = session.user;
+                console.log('User authenticated:', currentUser.email);
+            }
+            
             return true;
+            
         } catch (error) {
-            console.error('Error checking auth:', error);
+            console.error('Unexpected auth error:', error);
+            
+            // If it's a network error or unexpected issue, don't redirect immediately
+            if (authRetryCount < MAX_AUTH_RETRIES) {
+                authRetryCount++;
+                console.log(`Retrying after error (attempt ${authRetryCount})...`);
+                
+                // Wait a bit before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                return await checkAuth();
+            }
+            
+            // Show user-friendly error
+            alert('Unable to verify authentication. Please try logging in again.');
+            window.location.href = 'index.html';
             return false;
         }
     }
@@ -705,7 +772,7 @@
             const newInvoice = {
                 id: Date.now().toString(), // Generate unique ID
                 client_name: invoiceData.clientName,
-                client: invoiceData.clientName, // Keep both for compatibility
+                client: invoiceData.clientName, // For compatibility
                 amount: invoiceData.amount,
                 due_date: invoiceData.dueDate,
                 issue_date: invoiceData.issueDate,
@@ -771,15 +838,23 @@
     document.addEventListener('DOMContentLoaded', async function() {
         console.log('DOM loaded, initializing...');
         
+        // Show loading state
+        document.body.style.opacity = '0.5';
+        
         // First check authentication
         const isAuthenticated = await checkAuth();
+        
         if (!isAuthenticated) {
             // Disable form if not authenticated
             document.getElementById('invoiceForm').querySelectorAll('input, select, textarea, button').forEach(el => {
                 el.disabled = true;
             });
+            alert('Please sign in to create invoices');
             return;
         }
+        
+        // Restore opacity
+        document.body.style.opacity = '1';
         
         // Initialize dates
         initializeDates();
@@ -914,4 +989,5 @@
 </body>
 
 </html>
+
 
