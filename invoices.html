@@ -737,387 +737,421 @@
         </div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+   // Replace the entire <script> section with this fixed version:
+
+<script>
+    const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    let currentInvoices = [];
+    let deleteInvoiceId = null;
+    let deleteClientName = null;
+    let userCurrency = 'USD';
+    let userSettings = {};
+
+    // Currency symbols mapping
+    const currencySymbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'CAD': 'CA$',
+        'AUD': 'A$',
+        'JPY': '¥',
+        'CNY': '¥',
+        'INR': '₹'
+    };
+
+    // Country flags mapping for display
+    const currencyFlags = {
+        'USD': '🇺🇸',
+        'EUR': '🇪🇺',
+        'GBP': '🇬🇧',
+        'CAD': '🇨🇦',
+        'AUD': '🇦🇺',
+        'JPY': '🇯🇵',
+        'CNY': '🇨🇳',
+        'INR': '🇮🇳'
+    };
+
+    async function checkAuth() {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+            window.location.href = 'index.html';
+            return null;
+        }
+        return session;
+    }
+
+    function showNotification(message, type = 'success') {
+        document.querySelectorAll('.notification').forEach(n => n.remove());
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
         
-        let currentInvoices = [];
-        let deleteInvoiceId = null;
-        let deleteClientName = null;
-        let userCurrency = 'USD';
-        let userSettings = {};
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
 
-        // Currency symbols mapping
-        const currencySymbols = {
-            'USD': '$',
-            'EUR': '€',
-            'GBP': '£',
-            'CAD': 'CA$',
-            'AUD': 'A$',
-            'JPY': '¥',
-            'CNY': '¥',
-            'INR': '₹'
-        };
+    function formatCurrency(amount, currency = null) {
+        // Use user's currency if not specified for the invoice
+        const displayCurrency = currency || userCurrency;
+        const symbol = currencySymbols[displayCurrency] || '$';
+        
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: displayCurrency,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount || 0);
+    }
 
-        // Country flags mapping for display
-        const currencyFlags = {
-            'USD': '🇺🇸',
-            'EUR': '🇪🇺',
-            'GBP': '🇬🇧',
-            'CAD': '🇨🇦',
-            'AUD': '🇦🇺',
-            'JPY': '🇯🇵',
-            'CNY': '🇨🇳',
-            'INR': '🇮🇳'
-        };
+    function updateCurrencyDisplay() {
+        const currencyElement = document.getElementById('currentCurrency');
+        const flagElement = document.querySelector('.currency-flag');
+        
+        currencyElement.textContent = userCurrency;
+        flagElement.textContent = currencyFlags[userCurrency] || '💵';
+    }
 
-        async function checkAuth() {
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error || !session) {
-                window.location.href = 'index.html';
-                return null;
-            }
-            return session;
-        }
-
-        function showNotification(message, type = 'success') {
-            document.querySelectorAll('.notification').forEach(n => n.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
-        function formatCurrency(amount, currency = null) {
-            // Use user's currency if not specified for the invoice
-            const displayCurrency = currency || userCurrency;
-            const symbol = currencySymbols[displayCurrency] || '$';
-            
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: displayCurrency,
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(amount || 0);
-        }
-
-        function updateCurrencyDisplay() {
-            const currencyElement = document.getElementById('currentCurrency');
-            const flagElement = document.querySelector('.currency-flag');
-            
-            currencyElement.textContent = userCurrency;
-            flagElement.textContent = currencyFlags[userCurrency] || '💵';
-        }
-
-        async function loadUserSettings() {
-            try {
-                const session = await checkAuth();
-                if (!session) return;
-
-                // First try to get from user_profiles table
-                const { data: profile, error: profileError } = await supabase
-                    .from('user_profiles')
-                    .select('currency')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (!profileError && profile?.currency) {
-                    userCurrency = profile.currency;
-                    userSettings.currency = profile.currency;
-                } else {
-                    // Fall back to auth metadata
-                    const { data: { user } } = await supabase.auth.getUser();
-                    userCurrency = user?.user_metadata?.currency || 'USD';
-                    userSettings.currency = userCurrency;
-                }
-
-                updateCurrencyDisplay();
-                
-            } catch (error) {
-                console.error('Error loading user settings:', error);
-                userCurrency = 'USD';
-                updateCurrencyDisplay();
-            }
-        }
-
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
-            });
-        }
-
-        function calculateDaysLeft(dueDate) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const due = new Date(dueDate);
-            due.setHours(0, 0, 0, 0);
-            
-            const diffTime = due - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
-            if (diffDays === 0) return 'Today';
-            return `in ${diffDays} days`;
-        }
-
-        function getInvoiceStatus(invoice) {
-            if (invoice.status === 'paid') return 'paid';
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const dueDate = new Date(invoice.due_date);
-            dueDate.setHours(0, 0, 0, 0);
-            
-            if (dueDate < today) return 'overdue';
-            return 'pending';
-        }
-
-        function updateStats(invoices) {
-            const pending = invoices.filter(inv => getInvoiceStatus(inv) === 'pending');
-            const overdue = invoices.filter(inv => getInvoiceStatus(inv) === 'overdue');
-            
-            const totalOutstanding = [...pending, ...overdue]
-                .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
-            
-            const today = new Date();
-            const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const dueThisWeek = pending.filter(inv => {
-                const dueDate = new Date(inv.due_date);
-                return dueDate >= today && dueDate <= nextWeek;
-            }).reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
-
-            // Format all amounts with user's currency
-            document.getElementById('totalOutstanding').textContent = formatCurrency(totalOutstanding);
-            document.getElementById('pendingCount').textContent = pending.length;
-            document.getElementById('overdueCount').textContent = overdue.length;
-            document.getElementById('dueThisWeek').textContent = formatCurrency(dueThisWeek);
-        }
-
-        function displayInvoices(invoices) {
-            const container = document.getElementById('invoicesContainer');
-            container.innerHTML = '';
-
-            if (invoices.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📄</div>
-                        <div class="empty-state-text">No invoices yet</div>
-                        <div style="color: var(--gray-500); font-size: 14px;">Click "Create Invoice" to get started</div>
-                    </div>
-                `;
-                return;
-            }
-
-            const sorted = [...invoices].sort((a, b) => {
-                const statusA = getInvoiceStatus(a);
-                const statusB = getInvoiceStatus(b);
-                
-                if (statusA === 'overdue' && statusB !== 'overdue') return -1;
-                if (statusB === 'overdue' && statusA !== 'overdue') return 1;
-                
-                return new Date(a.due_date) - new Date(b.due_date);
-            });
-
-            sorted.forEach(invoice => {
-                const status = getInvoiceStatus(invoice);
-                // Use invoice currency if available, otherwise use user's currency
-                const invoiceCurrency = invoice.currency || userCurrency;
-                const row = document.createElement('div');
-                row.className = 'invoice-row';
-                row.style.animation = 'fadeIn 0.3s ease';
-                row.innerHTML = `
-                    <div data-label="Client">${invoice.client_name}</div>
-                    <div data-label="Amount">${formatCurrency(invoice.amount, invoiceCurrency)}</div>
-                    <div data-label="Due Date">${formatDate(invoice.due_date)}</div>
-                    <div data-label="Status">
-                        <span class="status-badge status-${status}">
-                            ${status.charAt(0).toUpperCase() + status.slice(1)}
-                        </span>
-                    </div>
-                    <div data-label="Days Left">${calculateDaysLeft(invoice.due_date)}</div>
-                    <div data-label="Actions" class="invoice-actions">
-                        <button class="btn-icon btn-delete" 
-                                onclick="showDeleteDialog('${invoice.id}', '${invoice.client_name}')"
-                                title="Delete Invoice">
-                            🗑️
-                        </button>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-        }
-
-        async function loadInvoices() {
-            try {
-                const refreshBtn = document.getElementById('refreshBtn');
-                refreshBtn.classList.add('loading');
-                refreshBtn.textContent = 'Loading...';
-
-                const session = await checkAuth();
-                if (!session) return;
-
-                const { data, error } = await supabase
-                    .from('invoices')
-                    .select('*')
-                    .eq('user_id', session.user.id)
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                currentInvoices = data || [];
-                displayInvoices(currentInvoices);
-                updateStats(currentInvoices);
-
-            } catch (error) {
-                console.error('Error loading invoices:', error);
-                showNotification('Error loading invoices', 'error');
-            } finally {
-                const refreshBtn = document.getElementById('refreshBtn');
-                refreshBtn.classList.remove('loading');
-                refreshBtn.textContent = '↻ Refresh';
-            }
-        }
-
-        function showDeleteDialog(invoiceId, clientName) {
-            deleteInvoiceId = invoiceId;
-            deleteClientName = clientName;
-            document.getElementById('dialogClientName').textContent = clientName;
-            document.getElementById('deleteDialog').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function hideDeleteDialog() {
-            document.getElementById('deleteDialog').classList.remove('active');
-            document.body.style.overflow = '';
-            deleteInvoiceId = null;
-            deleteClientName = null;
-        }
-
-        async function performDelete() {
-            if (!deleteInvoiceId) return;
-
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = 'Deleting...';
-
-            try {
-                const session = await checkAuth();
-                if (!session) return;
-
-                const { error } = await supabase
-                    .from('invoices')
-                    .delete()
-                    .eq('id', deleteInvoiceId)
-                    .eq('user_id', session.user.id);
-
-                if (error) throw error;
-
-                showNotification(`Invoice for "${deleteClientName}" deleted successfully!`);
-                hideDeleteDialog();
-                await loadInvoices();
-
-            } catch (error) {
-                console.error('Error deleting invoice:', error);
-                showNotification('Error deleting invoice', 'error');
-            } finally {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = 'Delete Invoice';
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
+    async function loadUserSettings() {
+        try {
             const session = await checkAuth();
             if (!session) return;
 
-            // Load user settings first (including currency)
-            await loadUserSettings();
+            // Get from user_profiles table
+            const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('currency')
+                .eq('id', session.user.id)
+                .single();
+
+            if (!profileError && profile?.currency) {
+                userCurrency = profile.currency;
+                userSettings.currency = profile.currency;
+            } else {
+                userCurrency = 'USD';
+                userSettings.currency = userCurrency;
+            }
+
+            updateCurrencyDisplay();
             
-            // Then load invoices
-            await loadInvoices();
+        } catch (error) {
+            console.error('Error loading user settings:', error);
+            userCurrency = 'USD';
+            updateCurrencyDisplay();
+        }
+    }
 
-            document.getElementById('refreshBtn').addEventListener('click', loadInvoices);
-            document.getElementById('cancelDeleteBtn').addEventListener('click', hideDeleteDialog);
-            document.getElementById('confirmDeleteBtn').addEventListener('click', performDelete);
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+    }
+
+    function calculateDaysLeft(dueDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const due = new Date(dueDate);
+        due.setHours(0, 0, 0, 0);
+        
+        const diffTime = due - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
+        if (diffDays === 0) return 'Today';
+        return `in ${diffDays} days`;
+    }
+
+    function getInvoiceStatus(invoice) {
+        if (invoice.status === 'paid') return 'paid';
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dueDate = new Date(invoice.due_date);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        if (dueDate < today) return 'overdue';
+        return 'pending';
+    }
+
+    function updateStats(invoices) {
+        const pending = invoices.filter(inv => getInvoiceStatus(inv) === 'pending');
+        const overdue = invoices.filter(inv => getInvoiceStatus(inv) === 'overdue');
+        
+        const totalOutstanding = [...pending, ...overdue]
+            .reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
+        
+        const today = new Date();
+        const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const dueThisWeek = pending.filter(inv => {
+            const dueDate = new Date(inv.due_date);
+            return dueDate >= today && dueDate <= nextWeek;
+        }).reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
+
+        // Format all amounts with user's currency
+        document.getElementById('totalOutstanding').textContent = formatCurrency(totalOutstanding);
+        document.getElementById('pendingCount').textContent = pending.length;
+        document.getElementById('overdueCount').textContent = overdue.length;
+        document.getElementById('dueThisWeek').textContent = formatCurrency(dueThisWeek);
+    }
+
+    function displayInvoices(invoices) {
+        const container = document.getElementById('invoicesContainer');
+        container.innerHTML = '';
+
+        if (invoices.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📄</div>
+                    <div class="empty-state-text">No invoices yet</div>
+                    <div style="color: var(--gray-500); font-size: 14px;">Click "Create Invoice" to get started</div>
+                </div>
+            `;
+            return;
+        }
+
+        const sorted = [...invoices].sort((a, b) => {
+            const statusA = getInvoiceStatus(a);
+            const statusB = getInvoiceStatus(b);
             
-            document.getElementById('deleteDialog').addEventListener('click', (e) => {
-                if (e.target.id === 'deleteDialog') hideDeleteDialog();
-            });
+            if (statusA === 'overdue' && statusB !== 'overdue') return -1;
+            if (statusB === 'overdue' && statusA !== 'overdue') return 1;
+            
+            return new Date(a.due_date) - new Date(b.due_date);
+        });
 
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') hideDeleteDialog();
-            });
+        sorted.forEach((invoice, index) => {
+            const status = getInvoiceStatus(invoice);
+            // Use invoice currency if available, otherwise use user's currency
+            const invoiceCurrency = invoice.currency || userCurrency;
+            const row = document.createElement('div');
+            row.className = 'invoice-row';
+            row.style.animation = 'fadeIn 0.3s ease';
+            row.innerHTML = `
+                <div data-label="Client">${invoice.client_name || invoice.client}</div>
+                <div data-label="Amount">${formatCurrency(invoice.amount, invoiceCurrency)}</div>
+                <div data-label="Due Date">${formatDate(invoice.due_date)}</div>
+                <div data-label="Status">
+                    <span class="status-badge status-${status}">
+                        ${status.charAt(0).toUpperCase() + status.slice(1)}
+                    </span>
+                </div>
+                <div data-label="Days Left">${calculateDaysLeft(invoice.due_date)}</div>
+                <div data-label="Actions" class="invoice-actions">
+                    <button class="btn-icon btn-delete" 
+                            onclick="showDeleteDialog(${index}, '${(invoice.client_name || invoice.client).replace(/'/g, "\\'")}')"
+                            title="Delete Invoice">
+                        🗑️
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+    }
 
-            // Listen for new invoices
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'invoice-created') {
-                    loadInvoices();
-                    showNotification('New invoice added!');
-                }
-            });
+    async function loadInvoices() {
+        try {
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.classList.add('loading');
+            refreshBtn.textContent = 'Loading...';
 
-            // Listen for currency changes from settings
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'currency-changed') {
-                    loadUserSettings();
-                    // Refresh invoices to update currency display
-                    loadInvoices();
-                    showNotification('Currency settings updated!');
-                }
-            });
+            const session = await checkAuth();
+            if (!session) return;
 
-            // Realtime subscription for invoices
-            supabase
-                .channel('invoices-channel')
-                .on('postgres_changes', 
-                    { 
-                        event: '*', 
-                        schema: 'public', 
-                        table: 'invoices',
-                        filter: `user_id=eq.${session.user.id}`
-                    }, 
-                    () => {
-                        loadInvoices();
+            console.log('Loading invoices for user:', session.user.id);
+            
+            // FIX: Get invoices from user_profiles table instead of invoices table
+            const { data: profile, error } = await supabase
+                .from('user_profiles')
+                .select('invoices')
+                .eq('id', session.user.id)
+                .single();
+
+            if (error) {
+                console.error('Error loading invoices:', error);
+                // If no invoices yet, show empty state
+                currentInvoices = [];
+            } else {
+                // Invoices are stored as a JSON array in the invoices field
+                currentInvoices = profile?.invoices || [];
+                console.log('Loaded invoices:', currentInvoices);
+            }
+
+            displayInvoices(currentInvoices);
+            updateStats(currentInvoices);
+
+        } catch (error) {
+            console.error('Error loading invoices:', error);
+            showNotification('Error loading invoices', 'error');
+        } finally {
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.classList.remove('loading');
+            refreshBtn.textContent = '↻ Refresh';
+        }
+    }
+
+    function showDeleteDialog(invoiceIndex, clientName) {
+        deleteInvoiceId = invoiceIndex;
+        deleteClientName = clientName;
+        document.getElementById('dialogClientName').textContent = clientName;
+        document.getElementById('deleteDialog').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideDeleteDialog() {
+        document.getElementById('deleteDialog').classList.remove('active');
+        document.body.style.overflow = '';
+        deleteInvoiceId = null;
+        deleteClientName = null;
+    }
+
+    async function performDelete() {
+        if (deleteInvoiceId === null) return;
+
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Deleting...';
+
+        try {
+            const session = await checkAuth();
+            if (!session) return;
+
+            console.log('Deleting invoice at index:', deleteInvoiceId);
+            console.log('Current invoices before delete:', currentInvoices);
+
+            // Get current profile
+            const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('invoices')
+                .eq('id', session.user.id)
+                .single();
+
+            if (profileError) throw profileError;
+
+            // Remove the invoice at the specified index
+            const updatedInvoices = [...currentInvoices];
+            updatedInvoices.splice(deleteInvoiceId, 1);
+            
+            console.log('Updated invoices after delete:', updatedInvoices);
+
+            // Update the user profile
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({ 
+                    invoices: updatedInvoices,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', session.user.id);
+
+            if (error) throw error;
+
+            // Update local cache
+            currentInvoices = updatedInvoices;
+
+            showNotification(`Invoice for "${deleteClientName}" deleted successfully!`);
+            hideDeleteDialog();
+            
+            // Refresh display
+            displayInvoices(currentInvoices);
+            updateStats(currentInvoices);
+
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+            showNotification('Error deleting invoice', 'error');
+        } finally {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Delete Invoice';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const session = await checkAuth();
+        if (!session) return;
+
+        // Load user settings first (including currency)
+        await loadUserSettings();
+        
+        // Then load invoices
+        await loadInvoices();
+
+        document.getElementById('refreshBtn').addEventListener('click', loadInvoices);
+        document.getElementById('cancelDeleteBtn').addEventListener('click', hideDeleteDialog);
+        document.getElementById('confirmDeleteBtn').addEventListener('click', performDelete);
+        
+        document.getElementById('deleteDialog').addEventListener('click', (e) => {
+            if (e.target.id === 'deleteDialog') hideDeleteDialog();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideDeleteDialog();
+        });
+
+        // Listen for new invoices from createInvoices page
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'invoice-created') {
+                loadInvoices();
+                showNotification('New invoice added!');
+            }
+        });
+
+        // Listen for currency changes from settings
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'currency-changed') {
+                loadUserSettings();
+                // Refresh invoices to update currency display
+                loadInvoices();
+                showNotification('Currency settings updated!');
+            }
+        });
+
+        // Realtime subscription for user profile changes (for invoices)
+        supabase
+            .channel('user-profile-channel')
+            .on('postgres_changes', 
+                { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'user_profiles',
+                    filter: `id=eq.${session.user.id}`
+                }, 
+                async (payload) => {
+                    console.log('User profile updated:', payload);
+                    
+                    // Update currency if changed
+                    if (payload.new.currency && payload.new.currency !== userCurrency) {
+                        userCurrency = payload.new.currency;
+                        updateCurrencyDisplay();
+                        showNotification('Currency updated to ' + userCurrency);
                     }
-                )
-                .subscribe();
-
-            // Realtime subscription for user settings (to detect currency changes)
-            supabase
-                .channel('user-settings-channel')
-                .on('postgres_changes', 
-                    { 
-                        event: 'UPDATE', 
-                        schema: 'public', 
-                        table: 'user_profiles',
-                        filter: `id=eq.${session.user.id}`
-                    }, 
-                    async (payload) => {
-                        if (payload.new.currency && payload.new.currency !== userCurrency) {
-                            userCurrency = payload.new.currency;
-                            updateCurrencyDisplay();
-                            // Refresh the display
-                            updateStats(currentInvoices);
+                    
+                    // Update invoices if changed
+                    if (payload.new.invoices) {
+                        const newInvoices = payload.new.invoices || [];
+                        // Check if invoices actually changed
+                        if (JSON.stringify(newInvoices) !== JSON.stringify(currentInvoices)) {
+                            currentInvoices = newInvoices;
                             displayInvoices(currentInvoices);
-                            showNotification('Currency updated to ' + userCurrency);
+                            updateStats(currentInvoices);
+                            showNotification('Invoices updated');
                         }
                     }
-                )
-                .subscribe();
-        });
-    </script>
+                }
+            )
+            .subscribe();
+    });
+</script>
 </body>
 
 </html>
+
 
