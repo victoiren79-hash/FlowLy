@@ -5,19 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlowLy - Reports</title>
     <link rel="icon" type="image/png" href="/favicon.png">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Load Chart.js FIRST -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Load Supabase CDN - IMPORTANT: Use correct URL -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    
-    <!-- Load other libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         :root {
@@ -53,7 +44,7 @@
             padding: 0 20px;
         }
         
-        /* HEADER - EXACT SAME AS INVOICES */
+        /* HEADER */
         header {
             background: transparent;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -75,7 +66,6 @@
             text-decoration: none;
         }
 
-        /* LARGER LOGO - EXACT SAME AS INVOICES */
         .logo-img {
             height: 80px;
             width: auto;
@@ -98,7 +88,7 @@
             opacity: 0.9;
         }
 
-        /* NAVIGATION - EXACT SAME AS INVOICES */
+        /* NAVIGATION */
         nav {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
@@ -142,10 +132,8 @@
             border-bottom-color: var(--primary);
         }
 
-        /* MOBILE - EXACT SAME AS INVOICES */
         @media (max-width: 480px) {
-            .logo-text,
-            .tagline {
+            .logo-text, .tagline {
                 display: none;
             }
             .logo-img {
@@ -156,7 +144,6 @@
             }
         }
 
-        /* Logo with max-height constraint - EXACT SAME AS INVOICES */
         .logo-img {
             height: 200px;
             width: auto;
@@ -192,19 +179,7 @@
             }
         }
 
-        /* KEEP YOUR EXISTING REPORTS PAGE STYLES BELOW - DON'T CHANGE THESE */
-        .currency-selector {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: var(--gray-100);
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        /* Page Header - YOUR EXISTING STYLES */
+        /* Page Header */
         .page-header {
             background: white;
             padding: 20px 0;
@@ -234,58 +209,7 @@
             font-size: 24px;
             font-weight: 700;
         }
-        
-        /* Main Content - YOUR EXISTING STYLES */
-        .main-content {
-            padding: 32px 0;
-        }
-        
-        .reports-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin: 32px 0 24px 0;
-            gap: 16px;
-        }
 
-        .reports-header-content {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .filters {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        /* Currency Display - YOUR EXISTING STYLES */
-        .currency-display {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: var(--primary-light);
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .currency-flag {
-            font-size: 18px;
-        }
-
-        /* Buttons - YOUR EXISTING STYLES */
         .btn-primary {
             background: var(--primary);
             color: white;
@@ -306,157 +230,12 @@
             background: #1d4ed8;
         }
 
-        .btn-secondary {
-            background: var(--gray-100);
-            color: var(--gray-800);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.2s;
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .btn-secondary:hover {
-            background: var(--gray-200);
-        }
-
-        /* Export Modal - YOUR EXISTING STYLES */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            width: 100%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--gray-900);
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--gray-600);
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-        }
-
-        .close-modal:hover {
-            background: var(--gray-100);
-        }
-
-        .export-options {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .export-option {
-            padding: 16px;
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .export-option:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-        }
-
-        .export-option.selected {
-            border-color: var(--primary);
-            background: var(--primary-light);
-        }
-
-        .export-option-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-
-        .export-option-icon {
-            font-size: 20px;
-        }
-
-        .export-option-title {
-            font-weight: 600;
-            color: var(--gray-900);
-        }
-
-        .export-option-description {
-            font-size: 14px;
-            color: var(--gray-600);
-            margin-left: 32px;
-        }
-
-        /* Form Elements - YOUR EXISTING STYLES */
-        select {
-            padding: 10px 12px;
-            border: 1px solid var(--gray-200);
-            border-radius: 6px;
-            background: white;
-            font-size: 14px;
-            cursor: pointer;
-            min-width: 150px;
-        }
-
-        select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        label {
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--gray-700);
-            white-space: nowrap;
-        }
-
-        /* Reports Grid - YOUR EXISTING STYLES */
+        /* Main Content */
         .reports-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -470,7 +249,6 @@
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             text-align: center;
-            min-width: 0;
         }
 
         .report-card h3 {
@@ -484,7 +262,6 @@
             height: 300px;
             position: relative;
             margin: 20px 0;
-            min-height: 200px;
         }
 
         .chart-summary {
@@ -493,7 +270,6 @@
             background: var(--gray-50);
             border-radius: 8px;
             text-align: left;
-            overflow-x: auto;
         }
 
         .summary-item {
@@ -501,7 +277,6 @@
             justify-content: space-between;
             margin-bottom: 8px;
             font-size: 14px;
-            min-width: 200px;
         }
 
         .summary-item.total {
@@ -531,7 +306,6 @@
             color: var(--danger);
         }
 
-        /* No data message */
         .no-data {
             text-align: center;
             color: var(--gray-600);
@@ -539,282 +313,21 @@
             font-style: italic;
         }
 
-        /* Toast Notification */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--gray-800);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: none;
-            align-items: center;
-            gap: 12px;
-            z-index: 1001;
-            max-width: 400px;
-            animation: slideIn 0.3s ease;
-        }
-
-        .toast.show {
-            display: flex;
-        }
-
-        .toast.success {
-            background: var(--success);
-        }
-
-        .toast.error {
-            background: var(--danger);
-        }
-
-        .toast.info {
-            background: var(--primary);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* Responsive Design - YOUR EXISTING STYLES */
+        /* Responsive */
         @media (max-width: 768px) {
-            /* Navigation adjustments for mobile */
-            .nav-links {
-                gap: 16px;
-                overflow-x: auto;
-                padding: 8px 0;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .nav-links a {
-                padding: 12px 0;
-                font-size: 14px;
-                white-space: nowrap;
-            }
-            
-            .currency-selector {
-                padding: 6px 10px;
-                font-size: 13px;
-            }
-
-            .container {
-                padding: 0 16px;
-            }
-            
-            .header-content {
-                padding: 12px 0;
-            }
-            
-            .logo-text {
-                font-size: 18px;
-            }
-            
-            .tagline {
-                display: none;
-            }
-            
-            .page-header {
-                padding: 16px 0;
-            }
-            
-            .page-header-content {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-            }
-            
-            .page-header-right {
-                width: 100%;
-            }
-            
-            .filters {
-                width: 100%;
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-            }
-            
-            .filter-group {
-                width: 100%;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
-            }
-            
-            .filter-group select {
-                width: 100%;
-            }
-            
-            .page-title {
-                font-size: 20px;
-            }
-            
             .reports-grid {
                 grid-template-columns: 1fr;
                 gap: 16px;
             }
             
-            .report-card {
-                padding: 20px;
-            }
-            
             .chart-container {
                 height: 250px;
-            }
-            
-            .modal-content {
-                padding: 20px;
-                margin: 20px;
-            }
-            
-            .toast {
-                left: 20px;
-                right: 20px;
-                max-width: none;
-            }
-            
-            .btn-primary, .btn-secondary {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            /* Further adjustments for very small screens */
-            .nav-links {
-                gap: 12px;
-            }
-            
-            .nav-links a {
-                font-size: 13px;
-                padding: 10px 0;
-            }
-            
-            .currency-selector {
-                padding: 5px 8px;
-                font-size: 12px;
-            }
-            
-            .user-avatar {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
-            }
-            
-            .report-card {
-                padding: 16px;
-            }
-            
-            .chart-container {
-                height: 200px;
-            }
-            
-            .btn-primary, .btn-secondary {
-                padding: 10px 16px;
-                font-size: 14px;
-            }
-            
-            .currency-display {
-                align-self: flex-start;
-            }
-            
-            .summary-item {
-                font-size: 13px;
-                min-width: 180px;
-            }
-        }
-
-        @media (max-width: 360px) {
-            /* Smallest screen adjustments */
-            .container {
-                padding: 0 12px;
-            }
-            
-            .nav-links {
-                gap: 8px;
-            }
-            
-            .nav-links a {
-                font-size: 12px;
-                padding: 8px 0;
-            }
-            
-            .chart-container {
-                height: 180px;
-            }
-            
-            .report-card {
-                padding: 12px;
-            }
-        }
-
-        /* Loading State */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--gray-200);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Print styles for PDF export */
-        @media print {
-            header, nav, .page-header, .filters, .btn-primary {
-                display: none !important;
-            }
-            
-            body {
-                background: white !important;
-                color: black !important;
-                font-size: 12pt !important;
-                padding-bottom: 0 !important;
-            }
-            
-            .container {
-                max-width: 100% !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            
-            .report-card {
-                box-shadow: none !important;
-                border: 1px solid #ddd !important;
-                page-break-inside: avoid;
-                margin-bottom: 20px !important;
-            }
-            
-            .chart-container {
-                height: 300px !important;
-            }
-            
-            .main-content {
-                padding: 0 !important;
             }
         }
     </style>
 </head>
 <body>
-    <!-- HEADER - EXACT SAME HTML AS INVOICES PAGE -->
+    <!-- HEADER -->
     <header>
         <div class="container">
             <div class="header-content">
@@ -833,7 +346,7 @@
         </div>
     </header>
     
-    <!-- NAVIGATION - EXACT SAME HTML AS INVOICES PAGE -->
+    <!-- NAVIGATION -->
     <nav>
         <div class="container">
             <div class="nav-container">
@@ -843,15 +356,10 @@
                     <li><a href="reports.html" class="active">Reports</a></li>
                     <li><a href="setting.html">Settings</a></li>
                 </ul>
-                <div class="currency-selector" id="navCurrencyDisplay">
-                    <span class="currency-flag" id="navCurrencyFlag">🇪🇺</span>
-                    <span id="navCurrentCurrency">EUR</span>
-                </div>
             </div>
         </div>
     </nav>
     
-    <!-- YOUR EXISTING REPORTS PAGE CONTENT (EXACTLY AS YOU HAD IT) -->
     <!-- Page Header -->
     <div class="page-header">
         <div class="container">
@@ -860,63 +368,10 @@
                     <h1 class="page-title">Reports</h1>
                 </div>
                 <div class="page-header-right">
-                    <div class="filters">
-                        <!-- REMOVED the period filter from here -->
-                        <button class="btn-primary" id="exportBtn">
-                            <i class="fas fa-download"></i> Export Report
-                        </button>
-                    </div>
+                    <button class="btn-primary" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i> Refresh Data
+                    </button>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <span id="toastMessage">Export completed successfully!</span>
-        <button id="closeToast" style="background:none;border:none;color:white;cursor:pointer;font-size:20px;">&times;</button>
-    </div>
-    
-    <!-- Export Modal -->
-    <div class="modal" id="exportModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Export Report</h3>
-                <button class="close-modal" id="closeModal">&times;</button>
-            </div>
-            <div class="export-options">
-                <div class="export-option" data-format="csv">
-                    <div class="export-option-header">
-                        <div class="export-option-icon">📊</div>
-                        <div class="export-option-title">CSV Format</div>
-                    </div>
-                    <div class="export-option-description">
-                        Export your financial data as CSV. Best for spreadsheets and data analysis.
-                    </div>
-                </div>
-                <div class="export-option" data-format="excel">
-                    <div class="export-option-header">
-                        <div class="export-option-icon">📈</div>
-                        <div class="export-option-title">Excel Format</div>
-                    </div>
-                    <div class="export-option-description">
-                        Export as Excel file with formatted tables and charts. Best for presentations.
-                    </div>
-                </div>
-                <div class="export-option" data-format="pdf">
-                    <div class="export-option-header">
-                        <div class="export-option-icon">📄</div>
-                        <div class="export-option-title">PDF Report</div>
-                    </div>
-                    <div class="export-option-description">
-                        Export as PDF document. Best for sharing and printing.
-                    </div>
-                </div>
-            </div>
-            <!-- REMOVED the period selection from export modal -->
-            <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button class="btn-secondary" id="cancelExport">Cancel</button>
-                <button class="btn-primary" id="confirmExport">Export Report</button>
             </div>
         </div>
     </div>
@@ -958,17 +413,22 @@
     </main>
 
     <script>
-        // SIMPLE SUPABASE SETUP - Use real data
+        // Supabase configuration
         const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
         
         // Create Supabase client
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Store user data
+        // Global variables
         let currentUser = null;
         let userProfile = null;
-        let userCurrency = 'EUR';
+        let userCurrency = 'USD';
+        let charts = {
+            incomeChart: null,
+            expensesChart: null,
+            moneyFlowChart: null
+        };
         
         // Currency flags mapping
         const currencyFlags = {
@@ -984,7 +444,7 @@
 
         // Format currency
         function formatCurrency(amount) {
-            if (!amount || isNaN(amount)) {
+            if (amount === null || amount === undefined || isNaN(amount)) {
                 amount = 0;
             }
             
@@ -996,32 +456,34 @@
             }).format(amount);
         }
         
-        // Check if user is logged in
+        // Check authentication
         async function checkAuth() {
             try {
-                const { data: { user }, error } = await supabaseClient.auth.getUser();
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
                 
-                if (error || !user) {
+                if (error || !session) {
                     console.log('Not authenticated, redirecting to login');
                     window.location.href = 'index.html';
-                    return false;
+                    return null;
                 }
                 
-                currentUser = user;
-                console.log('User authenticated:', user.email);
-                return true;
+                currentUser = session.user;
+                console.log('User authenticated:', currentUser.email);
+                return currentUser;
             } catch (error) {
                 console.error('Auth check error:', error);
-                return false;
+                window.location.href = 'index.html';
+                return null;
             }
         }
         
-        // Load user profile from database
+        // Load user profile
         async function loadUserProfile() {
             try {
+                if (!currentUser) return null;
+                
                 console.log('Loading profile for user:', currentUser.id);
                 
-                // Try to load from user_profiles table
                 const { data: profile, error } = await supabaseClient
                     .from('user_profiles')
                     .select('*')
@@ -1030,10 +492,10 @@
                 
                 if (error) {
                     console.log('Error loading profile:', error.message);
-                    return null;
+                    // Create default profile if doesn't exist
+                    return await createDefaultProfile();
                 }
                 
-                console.log('Profile loaded:', profile);
                 userProfile = profile;
                 
                 // Set currency
@@ -1041,6 +503,7 @@
                     userCurrency = profile.currency;
                 }
                 
+                console.log('Profile loaded successfully');
                 return profile;
                 
             } catch (error) {
@@ -1049,7 +512,35 @@
             }
         }
         
-        // Parse JSON data from profile
+        // Create default profile
+        async function createDefaultProfile() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_profiles')
+                    .insert({
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        currency: 'USD',
+                        income_sources: [],
+                        expenses: [],
+                        invoices: [],
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                userProfile = data;
+                return data;
+            } catch (error) {
+                console.error('Error creating default profile:', error);
+                return null;
+            }
+        }
+        
+        // Parse profile data
         function parseProfileData() {
             if (!userProfile) {
                 return {
@@ -1086,12 +577,12 @@
             return { incomeSources, expenses };
         }
         
-        // Calculate report data from user profile
+        // Calculate report data
         function calculateReportData() {
             const { incomeSources, expenses } = parseProfileData();
             
-            console.log('Income sources from DB:', incomeSources);
-            console.log('Expenses from DB:', expenses);
+            console.log('Income sources:', incomeSources);
+            console.log('Expenses:', expenses);
             
             // Calculate totals
             let totalIncome = 0;
@@ -1148,10 +639,26 @@
             };
         }
         
-        // Create charts with real data
+        // Destroy existing charts
+        function destroyCharts() {
+            Object.values(charts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+            charts = {
+                incomeChart: null,
+                expensesChart: null,
+                moneyFlowChart: null
+            };
+        }
+        
+        // Create charts
         function createCharts() {
+            destroyCharts(); // Clear existing charts
+            
             const reportData = calculateReportData();
-            console.log('Report data calculated:', reportData);
+            console.log('Report data:', reportData);
             
             // Create Income Sources Chart
             const incomeCtx = document.getElementById('incomeSourcesChart');
@@ -1159,10 +666,8 @@
                 const incomeLabels = Object.keys(reportData.incomeBySource);
                 const incomeValues = Object.values(reportData.incomeBySource);
                 
-                console.log('Income chart data:', incomeLabels, incomeValues);
-                
-                if (incomeLabels.length > 0) {
-                    new Chart(incomeCtx, {
+                if (incomeLabels.length > 0 && incomeValues.length > 0) {
+                    charts.incomeChart = new Chart(incomeCtx, {
                         type: 'doughnut',
                         data: {
                             labels: incomeLabels,
@@ -1176,15 +681,11 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { position: 'bottom' },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (context) => {
-                                            const value = context.raw || 0;
-                                            const total = reportData.totalIncome || 1;
-                                            const percentage = ((value / total) * 100).toFixed(1);
-                                            return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
-                                        }
+                                legend: { 
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        usePointStyle: true
                                     }
                                 }
                             },
@@ -1211,10 +712,8 @@
                 const expenseLabels = Object.keys(reportData.expensesByCategory);
                 const expenseValues = Object.values(reportData.expensesByCategory);
                 
-                console.log('Expenses chart data:', expenseLabels, expenseValues);
-                
-                if (expenseLabels.length > 0) {
-                    new Chart(expensesCtx, {
+                if (expenseLabels.length > 0 && expenseValues.length > 0) {
+                    charts.expensesChart = new Chart(expensesCtx, {
                         type: 'pie',
                         data: {
                             labels: expenseLabels,
@@ -1228,15 +727,11 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: { position: 'bottom' },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (context) => {
-                                            const value = context.raw || 0;
-                                            const total = reportData.totalExpenses || 1;
-                                            const percentage = ((value / total) * 100).toFixed(1);
-                                            return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
-                                        }
+                                legend: { 
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        usePointStyle: true
                                     }
                                 }
                             }
@@ -1259,7 +754,8 @@
             // Create Money Flow Chart
             const flowCtx = document.getElementById('moneyFlowChart');
             if (flowCtx) {
-                new Chart(flowCtx, {
+                // Always create this chart even with zero data
+                charts.moneyFlowChart = new Chart(flowCtx, {
                     type: 'bar',
                     data: {
                         labels: ['Money In', 'Money Out', 'Net Cash Flow'],
@@ -1288,14 +784,7 @@
                             }
                         },
                         plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: (context) => {
-                                        return formatCurrency(context.raw);
-                                    }
-                                }
-                            }
+                            legend: { display: false }
                         }
                     }
                 });
@@ -1307,395 +796,61 @@
                 
                 document.getElementById('moneyFlowSummary').innerHTML = `
                     <div class="summary-item money-in">
-                        <span>💰 Money In:</span>
+                        <span>Money In:</span>
                         <span class="summary-value">${formatCurrency(reportData.totalIncome)} (${incomePercentage}%)</span>
                     </div>
                     <div class="summary-item money-out">
-                        <span>💸 Money Out:</span>
+                        <span>Money Out:</span>
                         <span class="summary-value">${formatCurrency(reportData.totalExpenses)} (${expensesPercentage}%)</span>
                     </div>
                     <div class="summary-item total ${reportData.netFlow >= 0 ? 'net-positive' : 'net-negative'}">
-                        <span>📊 Net Cash Flow:</span>
+                        <span>Net Cash Flow:</span>
                         <span class="summary-value">${formatCurrency(reportData.netFlow)}</span>
                     </div>
                 `;
             }
         }
         
-        // Export functions
-        function exportToCSV(data) {
-            try {
-                const reportData = calculateReportData();
-                
-                // Create CSV content
-                let csvContent = "FlowLy Financial Report\n\n";
-                csvContent += `Report Date: ${new Date().toLocaleDateString()}\n`;
-                csvContent += `Currency: ${userCurrency}\n\n`;
-                
-                // Income Sources
-                csvContent += "INCOME SOURCES\n";
-                csvContent += "Source,Amount\n";
-                Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
-                    csvContent += `"${source}",${amount}\n`;
-                });
-                csvContent += `Total Income,${reportData.totalIncome}\n\n`;
-                
-                // Expenses
-                csvContent += "EXPENSES\n";
-                csvContent += "Category,Amount\n";
-                Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
-                    csvContent += `"${category}",${amount}\n`;
-                });
-                csvContent += `Total Expenses,${reportData.totalExpenses}\n\n`;
-                
-                // Summary
-                csvContent += "SUMMARY\n";
-                csvContent += "Description,Amount\n";
-                csvContent += `Money In,${reportData.totalIncome}\n`;
-                csvContent += `Money Out,${reportData.totalExpenses}\n`;
-                csvContent += `Net Cash Flow,${reportData.netFlow}\n`;
-                
-                // Create blob and download
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `FlowLy_Report_${new Date().toISOString().slice(0,10)}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                return true;
-            } catch (error) {
-                console.error('Error exporting to CSV:', error);
-                return false;
-            }
-        }
-        
-        function exportToExcel(data) {
-            try {
-                const reportData = calculateReportData();
-                
-                // Create workbook
-                const wb = XLSX.utils.book_new();
-                
-                // Income sheet
-                const incomeData = [
-                    ["FlowLy Financial Report"],
-                    ["Report Date:", new Date().toLocaleDateString()],
-                    ["Currency:", userCurrency],
-                    [],
-                    ["INCOME SOURCES"],
-                    ["Source", "Amount"]
-                ];
-                
-                Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
-                    incomeData.push([source, amount]);
-                });
-                incomeData.push(["Total Income", reportData.totalIncome]);
-                
-                const incomeWs = XLSX.utils.aoa_to_sheet(incomeData);
-                XLSX.utils.book_append_sheet(wb, incomeWs, "Income");
-                
-                // Expenses sheet
-                const expenseData = [
-                    ["EXPENSES"],
-                    ["Category", "Amount"]
-                ];
-                
-                Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
-                    expenseData.push([category, amount]);
-                });
-                expenseData.push(["Total Expenses", reportData.totalExpenses]);
-                
-                const expenseWs = XLSX.utils.aoa_to_sheet(expenseData);
-                XLSX.utils.book_append_sheet(wb, expenseWs, "Expenses");
-                
-                // Summary sheet
-                const summaryData = [
-                    ["FINANCIAL SUMMARY"],
-                    ["Description", "Amount"],
-                    ["Money In", reportData.totalIncome],
-                    ["Money Out", reportData.totalExpenses],
-                    ["Net Cash Flow", reportData.netFlow]
-                ];
-                
-                const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-                XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
-                
-                // Save file
-                XLSX.writeFile(wb, `FlowLy_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
-                
-                return true;
-            } catch (error) {
-                console.error('Error exporting to Excel:', error);
-                return false;
-            }
-        }
-        
-        function exportToPDF(data) {
-            try {
-                const reportData = calculateReportData();
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                // Title
-                doc.setFontSize(20);
-                doc.text("FlowLy Financial Report", 20, 20);
-                doc.setFontSize(12);
-                doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 20, 35);
-                doc.text(`Currency: ${userCurrency}`, 20, 42);
-                
-                let yPos = 55;
-                
-                // Income Sources
-                doc.setFontSize(16);
-                doc.text("Income Sources", 20, yPos);
-                yPos += 10;
-                
-                doc.setFontSize(10);
-                doc.autoTable({
-                    startY: yPos,
-                    head: [['Source', 'Amount']],
-                    body: Object.entries(reportData.incomeBySource).map(([source, amount]) => [
-                        source,
-                        formatCurrency(amount)
-                    ]),
-                    theme: 'striped',
-                    headStyles: { fillColor: [41, 128, 185] }
-                });
-                
-                yPos = doc.lastAutoTable.finalY + 10;
-                doc.setFontSize(11);
-                doc.text(`Total Income: ${formatCurrency(reportData.totalIncome)}`, 20, yPos);
-                yPos += 15;
-                
-                // Expenses
-                doc.setFontSize(16);
-                doc.text("Expenses", 20, yPos);
-                yPos += 10;
-                
-                doc.setFontSize(10);
-                doc.autoTable({
-                    startY: yPos,
-                    head: [['Category', 'Amount']],
-                    body: Object.entries(reportData.expensesByCategory).map(([category, amount]) => [
-                        category,
-                        formatCurrency(amount)
-                    ]),
-                    theme: 'striped',
-                    headStyles: { fillColor: [231, 76, 60] }
-                });
-                
-                yPos = doc.lastAutoTable.finalY + 10;
-                doc.setFontSize(11);
-                doc.text(`Total Expenses: ${formatCurrency(reportData.totalExpenses)}`, 20, yPos);
-                yPos += 20;
-                
-                // Summary
-                doc.setFontSize(16);
-                doc.text("Financial Summary", 20, yPos);
-                yPos += 15;
-                
-                doc.setFontSize(11);
-                doc.text(`Money In: ${formatCurrency(reportData.totalIncome)}`, 20, yPos);
-                yPos += 8;
-                doc.text(`Money Out: ${formatCurrency(reportData.totalExpenses)}`, 20, yPos);
-                yPos += 8;
-                
-                // Net flow with color
-                doc.setTextColor(reportData.netFlow >= 0 ? 46, 204, 113 : 231, 76, 60);
-                doc.text(`Net Cash Flow: ${formatCurrency(reportData.netFlow)}`, 20, yPos);
-                
-                // Footer
-                doc.setTextColor(0, 0, 0);
-                doc.setFontSize(8);
-                doc.text("Generated by FlowLy - Cash Flow Management", 105, 285, null, null, "center");
-                
-                // Save PDF
-                doc.save(`FlowLy_Report_${new Date().toISOString().slice(0,10)}.pdf`);
-                
-                return true;
-            } catch (error) {
-                console.error('Error exporting to PDF:', error);
-                return false;
-            }
-        }
-        
-        // Show toast notification
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            
-            if (toast && toastMessage) {
-                toastMessage.textContent = message;
-                toast.className = 'toast ' + type;
-                toast.classList.add('show');
-                
-                // Auto-hide after 3 seconds
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
-            }
-        }
-        
         // Setup event listeners
         function setupEventListeners() {
-            // Export modal
-            const exportBtn = document.getElementById('exportBtn');
-            const exportModal = document.getElementById('exportModal');
-            const closeModal = document.getElementById('closeModal');
-            const cancelExport = document.getElementById('cancelExport');
-            const confirmExport = document.getElementById('confirmExport');
-            
-            if (exportBtn && exportModal && closeModal) {
-                exportBtn.addEventListener('click', () => {
-                    exportModal.classList.add('active');
-                });
-                
-                closeModal.addEventListener('click', () => {
-                    exportModal.classList.remove('active');
-                });
-                
-                if (cancelExport) {
-                    cancelExport.addEventListener('click', () => {
-                        exportModal.classList.remove('active');
-                    });
-                }
-                
-                // Close on outside click
-                exportModal.addEventListener('click', (e) => {
-                    if (e.target === exportModal) {
-                        exportModal.classList.remove('active');
-                    }
-                });
-            }
-            
-            // Toast close
-            const closeToast = document.getElementById('closeToast');
-            if (closeToast) {
-                closeToast.addEventListener('click', () => {
-                    document.getElementById('toast').classList.remove('show');
-                });
-            }
-            
-            // Export options selection
-            const exportOptions = document.querySelectorAll('.export-option');
-            exportOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    exportOptions.forEach(opt => opt.classList.remove('selected'));
-                    option.classList.add('selected');
-                });
-            });
-            
-            // Initialize first option as selected
-            if (exportOptions.length > 0) {
-                exportOptions[0].classList.add('selected');
-            }
-            
-            // Confirm export button
-            if (confirmExport) {
-                confirmExport.addEventListener('click', () => {
-                    const selectedOption = document.querySelector('.export-option.selected');
-                    if (!selectedOption) {
-                        showToast('Please select an export format', 'error');
-                        return;
-                    }
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', async () => {
+                    refreshBtn.disabled = true;
+                    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
                     
-                    const format = selectedOption.dataset.format;
-                    const reportData = calculateReportData();
+                    await loadUserProfile();
+                    createCharts();
                     
-                    // Show loading
-                    const originalText = confirmExport.innerHTML;
-                    confirmExport.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
-                    confirmExport.disabled = true;
-                    
-                    let success = false;
-                    
-                    // Export based on format
-                    switch(format) {
-                        case 'csv':
-                            success = exportToCSV(reportData);
-                            break;
-                        case 'excel':
-                            success = exportToExcel(reportData);
-                            break;
-                        case 'pdf':
-                            success = exportToPDF(reportData);
-                            break;
-                        default:
-                            success = false;
-                    }
-                    
-                    // Reset button
                     setTimeout(() => {
-                        confirmExport.innerHTML = originalText;
-                        confirmExport.disabled = false;
-                        
-                        if (success) {
-                            showToast(`Report exported as ${format.toUpperCase()} successfully!`, 'success');
-                            exportModal.classList.remove('active');
-                        } else {
-                            showToast('Failed to export report. Please try again.', 'error');
-                        }
+                        refreshBtn.disabled = false;
+                        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
                     }, 500);
                 });
             }
         }
         
-        // Update currency display in navigation
-        function updateCurrencyDisplay() {
-            const currencyFlag = document.getElementById('navCurrencyFlag');
-            const currencyText = document.getElementById('navCurrentCurrency');
-            
-            if (currencyFlag && currencyText) {
-                currencyFlag.textContent = currencyFlags[userCurrency] || '💵';
-                currencyText.textContent = userCurrency;
-            }
-        }
-        
         // Main initialization
         async function initializePage() {
-            console.log('=== Initializing Reports Page ===');
+            console.log('Initializing Reports Page...');
             
             // Check authentication
-            const isAuthenticated = await checkAuth();
-            if (!isAuthenticated) {
+            const user = await checkAuth();
+            if (!user) {
                 console.log('Authentication failed');
                 return;
             }
             
-            console.log('Authentication successful');
-            
             // Load user profile
             await loadUserProfile();
             
-            // Update currency display
-            updateCurrencyDisplay();
-            
-            if (!userProfile) {
-                console.log('No profile found, showing empty state');
-                // Show empty state messages
-                document.getElementById('incomeSourcesChart').parentElement.innerHTML = 
-                    '<div class="no-data">No income data available. Add income sources in Settings.</div>';
-                document.getElementById('expensesChart').parentElement.innerHTML = 
-                    '<div class="no-data">No expense data available. Add expenses in Settings.</div>';
-                document.getElementById('moneyFlowChart').parentElement.innerHTML = 
-                    '<div class="no-data">No financial data available. Add income and expenses in Settings.</div>';
-                
-                // Clear summaries
-                document.getElementById('incomeSourcesSummary').innerHTML = '';
-                document.getElementById('expensesSummary').innerHTML = '';
-                document.getElementById('moneyFlowSummary').innerHTML = '';
-            } else {
-                // Create charts with real data
-                createCharts();
-            }
+            // Create charts with real data
+            createCharts();
             
             // Setup event listeners
             setupEventListeners();
             
-            console.log('=== Reports Page Initialized ===');
+            console.log('Reports Page Initialized');
         }
         
         // Initialize when page loads
