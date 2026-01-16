@@ -492,6 +492,26 @@
             font-style: italic;
         }
 
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .reports-grid {
@@ -628,36 +648,42 @@
     </div>
 
     <main class="container">
-        <div class="reports-grid">
-            <div class="report-card">
-                <h3>Income Sources</h3>
-                <div class="chart-container">
-                    <canvas id="incomeSourcesChart"></canvas>
-                </div>
-                <div class="chart-summary" id="incomeSourcesSummary">
-                    <!-- Summary will be loaded here -->
-                </div>
-            </div>
-
-            <div class="report-card">
-                <h3>Expenses Breakdown</h3>
-                <div class="chart-container">
-                    <canvas id="expensesChart"></canvas>
-                </div>
-                <div class="chart-summary" id="expensesSummary">
-                    <!-- Summary will be loaded here -->
-                </div>
-            </div>
+        <div id="loadingIndicator" class="loading">
+            <div class="spinner"></div>
         </div>
 
-        <div class="reports-grid">
-            <div class="report-card">
-                <h3>Money In vs Money Out</h3>
-                <div class="chart-container">
-                    <canvas id="moneyFlowChart"></canvas>
+        <div id="reportsContent" style="display: none;">
+            <div class="reports-grid">
+                <div class="report-card">
+                    <h3>Income Sources</h3>
+                    <div class="chart-container">
+                        <canvas id="incomeSourcesChart"></canvas>
+                    </div>
+                    <div class="chart-summary" id="incomeSourcesSummary">
+                        <!-- Summary will be loaded here -->
+                    </div>
                 </div>
-                <div class="chart-summary" id="moneyFlowSummary">
-                    <!-- Summary will be loaded here -->
+
+                <div class="report-card">
+                    <h3>Expenses Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="expensesChart"></canvas>
+                    </div>
+                    <div class="chart-summary" id="expensesSummary">
+                        <!-- Summary will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="reports-grid">
+                <div class="report-card">
+                    <h3>Money In vs Money Out</h3>
+                    <div class="chart-container">
+                        <canvas id="moneyFlowChart"></canvas>
+                    </div>
+                    <div class="chart-summary" id="moneyFlowSummary">
+                        <!-- Summary will be loaded here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -675,6 +701,9 @@
         let currentUser = null;
         let userProfile = null;
         let userCurrency = 'USD';
+        let userInvoices = [];
+        let userIncomeSources = [];
+        let userExpenses = [];
         let charts = {
             incomeChart: null,
             expensesChart: null,
@@ -688,12 +717,17 @@
                 amount = 0;
             }
             
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: userCurrency,
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(amount);
+            try {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: userCurrency,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(amount);
+            } catch (error) {
+                // Fallback if currency is not supported
+                return `${userCurrency} ${parseFloat(amount).toFixed(2)}`;
+            }
         }
         
         // Show toast notification
@@ -753,8 +787,7 @@
                 
                 if (error) {
                     console.log('Error loading profile:', error.message);
-                    // Create default profile if doesn't exist
-                    return await createDefaultProfile();
+                    return null;
                 }
                 
                 userProfile = profile;
@@ -764,7 +797,38 @@
                     userCurrency = profile.currency;
                 }
                 
+                // Load invoices (from invoices page)
+                userInvoices = profile.invoices || [];
+                
+                // Load income sources (from settings page)
+                if (profile.income_sources) {
+                    try {
+                        userIncomeSources = typeof profile.income_sources === 'string' 
+                            ? JSON.parse(profile.income_sources) 
+                            : profile.income_sources;
+                    } catch (e) {
+                        userIncomeSources = [];
+                        console.error('Error parsing income sources:', e);
+                    }
+                }
+                
+                // Load expenses (from settings page)
+                if (profile.expenses) {
+                    try {
+                        userExpenses = typeof profile.expenses === 'string' 
+                            ? JSON.parse(profile.expenses) 
+                            : profile.expenses;
+                    } catch (e) {
+                        userExpenses = [];
+                        console.error('Error parsing expenses:', e);
+                    }
+                }
+                
                 console.log('Profile loaded successfully');
+                console.log('Invoices:', userInvoices);
+                console.log('Income Sources:', userIncomeSources);
+                console.log('Expenses:', userExpenses);
+                
                 return profile;
                 
             } catch (error) {
@@ -773,127 +837,67 @@
             }
         }
         
-        // Create default profile
-        async function createDefaultProfile() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('user_profiles')
-                    .insert({
-                        id: currentUser.id,
-                        email: currentUser.email,
-                        currency: 'USD',
-                        income_sources: [],
-                        expenses: [],
-                        invoices: [],
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    })
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                userProfile = data;
-                return data;
-            } catch (error) {
-                console.error('Error creating default profile:', error);
-                return null;
-            }
-        }
-        
-        // Parse profile data
-        function parseProfileData() {
-            if (!userProfile) {
-                return {
-                    incomeSources: [],
-                    expenses: []
-                };
-            }
+        // Calculate report data from invoices
+        function calculateReportDataFromInvoices() {
+            console.log('Calculating report data from invoices:', userInvoices);
             
-            let incomeSources = [];
-            let expenses = [];
-            
-            try {
-                // Parse income_sources
-                if (userProfile.income_sources) {
-                    if (typeof userProfile.income_sources === 'string') {
-                        incomeSources = JSON.parse(userProfile.income_sources);
-                    } else if (Array.isArray(userProfile.income_sources)) {
-                        incomeSources = userProfile.income_sources;
-                    }
-                }
-                
-                // Parse expenses
-                if (userProfile.expenses) {
-                    if (typeof userProfile.expenses === 'string') {
-                        expenses = JSON.parse(userProfile.expenses);
-                    } else if (Array.isArray(userProfile.expenses)) {
-                        expenses = userProfile.expenses;
-                    }
-                }
-            } catch (error) {
-                console.error('Error parsing profile data:', error);
-            }
-            
-            return { incomeSources, expenses };
-        }
-        
-        // Calculate report data
-        function calculateReportData() {
-            const { incomeSources, expenses } = parseProfileData();
-            
-            // Calculate totals
             let totalIncome = 0;
             let totalExpenses = 0;
+            let incomeBySource = {};
+            let expensesByCategory = {};
             
-            if (Array.isArray(incomeSources)) {
-                totalIncome = incomeSources.reduce((sum, source) => {
-                    const amount = parseFloat(source?.amount) || 0;
-                    return sum + amount;
-                }, 0);
+            // Process invoices
+            if (Array.isArray(userInvoices)) {
+                userInvoices.forEach(invoice => {
+                    if (invoice && invoice.amount) {
+                        const amount = parseFloat(invoice.amount) || 0;
+                        const status = invoice.status || '';
+                        const client = invoice.client_name || invoice.client || 'Unknown';
+                        
+                        if (status.toLowerCase() === 'paid') {
+                            // This is income
+                            totalIncome += amount;
+                            incomeBySource[client] = (incomeBySource[client] || 0) + amount;
+                        } else {
+                            // This is an expense (unpaid invoice)
+                            totalExpenses += amount;
+                            const category = invoice.category || 'Uncategorized';
+                            expensesByCategory[category] = (expensesByCategory[category] || 0) + amount;
+                        }
+                    }
+                });
             }
             
-            if (Array.isArray(expenses)) {
-                totalExpenses = expenses.reduce((sum, expense) => {
-                    const amount = parseFloat(expense?.amount) || 0;
-                    return sum + amount;
-                }, 0);
+            // Add income sources from settings
+            if (Array.isArray(userIncomeSources)) {
+                userIncomeSources.forEach(source => {
+                    if (source && source.name && source.amount) {
+                        const amount = parseFloat(source.amount) || 0;
+                        totalIncome += amount;
+                        incomeBySource[source.name] = (incomeBySource[source.name] || 0) + amount;
+                    }
+                });
+            }
+            
+            // Add expenses from settings
+            if (Array.isArray(userExpenses)) {
+                userExpenses.forEach(expense => {
+                    if (expense && expense.category && expense.amount) {
+                        const amount = parseFloat(expense.amount) || 0;
+                        totalExpenses += amount;
+                        expensesByCategory[expense.category] = (expensesByCategory[expense.category] || 0) + amount;
+                    }
+                });
             }
             
             const netFlow = totalIncome - totalExpenses;
-            
-            // Group income by source
-            const incomeBySource = {};
-            if (Array.isArray(incomeSources)) {
-                incomeSources.forEach(source => {
-                    if (source && source.name) {
-                        const name = source.name;
-                        const amount = parseFloat(source.amount) || 0;
-                        incomeBySource[name] = (incomeBySource[name] || 0) + amount;
-                    }
-                });
-            }
-            
-            // Group expenses by category
-            const expensesByCategory = {};
-            if (Array.isArray(expenses)) {
-                expenses.forEach(expense => {
-                    if (expense && expense.category) {
-                        const category = expense.category;
-                        const amount = parseFloat(expense.amount) || 0;
-                        expensesByCategory[category] = (expensesByCategory[category] || 0) + amount;
-                    }
-                });
-            }
             
             return {
                 totalIncome,
                 totalExpenses,
                 netFlow,
                 incomeBySource,
-                expensesByCategory,
-                incomeSourcesArray: incomeSources || [],
-                expensesArray: expenses || []
+                expensesByCategory
             };
         }
         
@@ -911,11 +915,31 @@
             };
         }
         
+        // Show loading state
+        function showLoading(show) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const reportsContent = document.getElementById('reportsContent');
+            
+            if (loadingIndicator && reportsContent) {
+                if (show) {
+                    loadingIndicator.style.display = 'flex';
+                    reportsContent.style.display = 'none';
+                } else {
+                    loadingIndicator.style.display = 'none';
+                    reportsContent.style.display = 'block';
+                }
+            }
+        }
+        
         // Create charts
         function createCharts() {
-            destroyCharts(); // Clear existing charts
+            showLoading(true);
             
-            const reportData = calculateReportData();
+            // Destroy existing charts
+            destroyCharts();
+            
+            const reportData = calculateReportDataFromInvoices();
+            console.log('Report data:', reportData);
             
             // Create Income Sources Chart
             const incomeCtx = document.getElementById('incomeSourcesChart');
@@ -923,14 +947,17 @@
                 const incomeLabels = Object.keys(reportData.incomeBySource);
                 const incomeValues = Object.values(reportData.incomeBySource);
                 
-                if (incomeLabels.length > 0 && incomeValues.length > 0) {
+                if (incomeLabels.length > 0 && incomeValues.length > 0 && reportData.totalIncome > 0) {
                     charts.incomeChart = new Chart(incomeCtx, {
                         type: 'doughnut',
                         data: {
                             labels: incomeLabels,
                             datasets: [{
                                 data: incomeValues,
-                                backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'],
+                                backgroundColor: [
+                                    '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444',
+                                    '#84cc16', '#06b6d4', '#8b5cf6', '#ec4899', '#f97316'
+                                ],
                                 borderWidth: 1
                             }]
                         },
@@ -943,6 +970,17 @@
                                     labels: {
                                         padding: 20,
                                         usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.raw || 0;
+                                            const total = reportData.totalIncome;
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                        }
                                     }
                                 }
                             },
@@ -958,7 +996,7 @@
                         </div>
                     `;
                 } else {
-                    incomeCtx.parentElement.innerHTML = '<div class="no-data">No income data available. Add income sources in Settings.</div>';
+                    incomeCtx.parentElement.innerHTML = '<div class="no-data">No income data available. Add income sources or mark invoices as paid.</div>';
                     document.getElementById('incomeSourcesSummary').innerHTML = '';
                 }
             }
@@ -969,14 +1007,17 @@
                 const expenseLabels = Object.keys(reportData.expensesByCategory);
                 const expenseValues = Object.values(reportData.expensesByCategory);
                 
-                if (expenseLabels.length > 0 && expenseValues.length > 0) {
+                if (expenseLabels.length > 0 && expenseValues.length > 0 && reportData.totalExpenses > 0) {
                     charts.expensesChart = new Chart(expensesCtx, {
                         type: 'pie',
                         data: {
                             labels: expenseLabels,
                             datasets: [{
                                 data: expenseValues,
-                                backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981'],
+                                backgroundColor: [
+                                    '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#10b981',
+                                    '#84cc16', '#06b6d4', '#8b5cf6', '#ec4899', '#f97316'
+                                ],
                                 borderWidth: 1
                             }]
                         },
@@ -989,6 +1030,17 @@
                                     labels: {
                                         padding: 20,
                                         usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.raw || 0;
+                                            const total = reportData.totalExpenses;
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                        }
                                     }
                                 }
                             }
@@ -1003,7 +1055,7 @@
                         </div>
                     `;
                 } else {
-                    expensesCtx.parentElement.innerHTML = '<div class="no-data">No expense data available. Add expenses in Settings.</div>';
+                    expensesCtx.parentElement.innerHTML = '<div class="no-data">No expense data available. Add expenses or create unpaid invoices.</div>';
                     document.getElementById('expensesSummary').innerHTML = '';
                 }
             }
@@ -1011,6 +1063,7 @@
             // Create Money Flow Chart
             const flowCtx = document.getElementById('moneyFlowChart');
             if (flowCtx) {
+                // Always create this chart
                 charts.moneyFlowChart = new Chart(flowCtx, {
                     type: 'bar',
                     data: {
@@ -1040,7 +1093,14 @@
                             }
                         },
                         plugins: {
-                            legend: { display: false }
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return formatCurrency(context.raw);
+                                    }
+                                }
+                            }
                         }
                     }
                 });
@@ -1065,12 +1125,14 @@
                     </div>
                 `;
             }
+            
+            showLoading(false);
         }
         
         // Export functions
         function exportToCSV() {
             try {
-                const reportData = calculateReportData();
+                const reportData = calculateReportDataFromInvoices();
                 const date = new Date().toISOString().slice(0, 10);
                 
                 // Create CSV content
@@ -1082,7 +1144,7 @@
                 csvContent += "INCOME SOURCES\n";
                 csvContent += "Source,Amount\n";
                 Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
-                    csvContent += `${source},${amount}\n`;
+                    csvContent += `"${source}",${amount}\n`;
                 });
                 csvContent += `Total Income,${reportData.totalIncome}\n\n`;
                 
@@ -1090,7 +1152,7 @@
                 csvContent += "EXPENSES\n";
                 csvContent += "Category,Amount\n";
                 Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
-                    csvContent += `${category},${amount}\n`;
+                    csvContent += `"${category}",${amount}\n`;
                 });
                 csvContent += `Total Expenses,${reportData.totalExpenses}\n\n`;
                 
@@ -1107,7 +1169,6 @@
                 const url = URL.createObjectURL(blob);
                 link.setAttribute("href", url);
                 link.setAttribute("download", `FlowLy_Report_${date}.csv`);
-                link.style.visibility = 'hidden';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -1121,7 +1182,7 @@
         
         function exportToExcel() {
             try {
-                const reportData = calculateReportData();
+                const reportData = calculateReportDataFromInvoices();
                 const date = new Date().toISOString().slice(0, 10);
                 
                 // Create workbook
@@ -1141,6 +1202,7 @@
                 Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
                     incomeData.push([source, amount]);
                 });
+                incomeData.push(["", ""]);
                 incomeData.push(["Total Income", reportData.totalIncome]);
                 
                 const incomeWs = XLSX.utils.aoa_to_sheet(incomeData);
@@ -1154,6 +1216,7 @@
                 Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
                     expenseData.push([category, amount]);
                 });
+                expenseData.push(["", ""]);
                 expenseData.push(["Total Expenses", reportData.totalExpenses]);
                 
                 const expenseWs = XLSX.utils.aoa_to_sheet(expenseData);
@@ -1182,7 +1245,7 @@
         
         function exportToPDF() {
             try {
-                const reportData = calculateReportData();
+                const reportData = calculateReportDataFromInvoices();
                 const date = new Date().toISOString().slice(0, 10);
                 
                 // Initialize PDF
@@ -1208,7 +1271,6 @@
                 Object.entries(reportData.incomeBySource).forEach(([source, amount]) => {
                     incomeTable.push([source, formatCurrency(amount)]);
                 });
-                incomeTable.push(["Total Income", formatCurrency(reportData.totalIncome)]);
                 
                 doc.autoTable({
                     startY: yPos,
@@ -1218,7 +1280,9 @@
                     headStyles: { fillColor: [46, 204, 113] }
                 });
                 
-                yPos = doc.lastAutoTable.finalY + 15;
+                yPos = doc.lastAutoTable.finalY + 10;
+                doc.text(`Total Income: ${formatCurrency(reportData.totalIncome)}`, 20, yPos);
+                yPos += 15;
                 
                 // Expenses section
                 doc.setFontSize(16);
@@ -1230,7 +1294,6 @@
                 Object.entries(reportData.expensesByCategory).forEach(([category, amount]) => {
                     expenseTable.push([category, formatCurrency(amount)]);
                 });
-                expenseTable.push(["Total Expenses", formatCurrency(reportData.totalExpenses)]);
                 
                 doc.autoTable({
                     startY: yPos,
@@ -1240,7 +1303,9 @@
                     headStyles: { fillColor: [231, 76, 60] }
                 });
                 
-                yPos = doc.lastAutoTable.finalY + 15;
+                yPos = doc.lastAutoTable.finalY + 10;
+                doc.text(`Total Expenses: ${formatCurrency(reportData.totalExpenses)}`, 20, yPos);
+                yPos += 15;
                 
                 // Summary section
                 doc.setFontSize(16);
@@ -1391,6 +1456,18 @@
             
             // Load user profile
             await loadUserProfile();
+            
+            if (!userProfile) {
+                document.getElementById('reportsContent').innerHTML = `
+                    <div class="no-data">
+                        <h3>No Profile Found</h3>
+                        <p>Please add some data in the Settings page first.</p>
+                        <a href="setting.html" class="btn-primary" style="margin-top: 20px;">Go to Settings</a>
+                    </div>
+                `;
+                showLoading(false);
+                return;
+            }
             
             // Create charts
             createCharts();
