@@ -2,14 +2,15 @@
 const supabaseUrl = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
 const supabaseKey = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
 
-// EmailJS Configuration - REPLACE THESE WITH YOUR ACTUAL VALUES
+// EmailJS Configuration
 const EMAILJS_CONFIG = {
-    serviceId: 'default_service', // Usually 'default_service' if you have one email service
-    templateId: 'template_4agrj1a', // Get this from EmailJS Templates
-    userId: 'ViKEF4HrhrIGcmkfK' // Get this from EmailJS Account → API Keys
+    serviceId: 'default_service',
+    templateId: 'template_4agrj1a',
+    userId: 'ViKEF4HrhrIGcmkfK'
 };
 
 let supabaseClient;
+let cachedUserProfile = null; // Cache user profile to prevent repeated API calls
 
 // Wait for Supabase to load
 document.addEventListener('DOMContentLoaded', () => {
@@ -60,7 +61,7 @@ function showErrorOnPage(message) {
     }
 }
 
-// Add CSS styles for action buttons, animations, and dialogs
+// Add CSS styles
 const actionStyles = `
 .transaction-item {
     position: relative;
@@ -119,15 +120,6 @@ const actionStyles = `
 
 .transaction-amount {
     transition: opacity 0.3s ease;
-}
-
-.quick-update {
-    animation: pulse 0.5s ease-in-out;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.8; transform: scale(0.98); }
 }
 
 /* Loading system */
@@ -203,13 +195,6 @@ const actionStyles = `
     text-align: center;
     max-width: 300px;
     line-height: 1.5;
-}
-
-.loading-details {
-    color: rgba(255, 255, 255, 0.8);
-    margin-top: 8px;
-    font-size: 14px;
-    font-weight: 400;
 }
 
 /* Dialog Boxes */
@@ -362,48 +347,6 @@ const actionStyles = `
     transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Cash Health Label Styles */
-.cash-health-label {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-left: 5px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.cash-health-critical {
-    background: #fee2e2;
-    color: #dc2626;
-}
-
-.cash-health-low {
-    background: #fef3c7;
-    color: #d97706;
-}
-
-.cash-health-moderate {
-    background: #dbeafe;
-    color: #2563eb;
-}
-
-.cash-health-stable {
-    background: #d1fae5;
-    color: #059669;
-}
-
-.cash-health-growing {
-    background: #d1fae5;
-    color: #10b981;
-}
-
-.cash-health-neutral {
-    background: #f3f4f6;
-    color: #6b7280;
-}
-
 /* Modal Styles */
 .modal {
     display: none;
@@ -535,11 +478,6 @@ const actionStyles = `
     background: #e5e7eb;
 }
 
-/* Alert Section - REMOVED the annoying yellow alert */
-.alert-section {
-    display: none; /* HIDDEN - won't show every time dashboard loads */
-}
-
 /* Global button styles */
 .btn-add {
     background: #10b981;
@@ -568,7 +506,7 @@ document.head.appendChild(actionStyleSheet);
 // Loading system
 let currentLoadingTimeout = null;
 
-function showLoading(message = 'Loading...', details = '') {
+function showLoading(message = 'Loading...') {
     if (currentLoadingTimeout) {
         clearTimeout(currentLoadingTimeout);
         currentLoadingTimeout = null;
@@ -582,7 +520,6 @@ function showLoading(message = 'Loading...', details = '') {
     loadingOverlay.innerHTML = `
         <div class="loading-spinner"></div>
         <div class="loading-text">${message}</div>
-        ${details ? `<div class="loading-details">${details}</div>` : ''}
     `;
     document.body.appendChild(loadingOverlay);
 }
@@ -619,46 +556,42 @@ function hideLoading() {
     }
 }
 
-// Dialog System
+// Simple dialog system (optimized)
 function showDialog(options) {
     const {
         type = 'info',
         title = 'Notification',
         message = '',
-        icon = '',
         confirmText = 'OK',
-        cancelText = 'Cancel',
-        onConfirm = null,
-        onCancel = null,
-        showCancel = true
+        onConfirm = null
     } = options;
     
-    hideDialog();
+    // Remove any existing dialogs
+    const existingDialog = document.getElementById('globalDialogOverlay');
+    if (existingDialog) {
+        existingDialog.remove();
+    }
     
     const dialogOverlay = document.createElement('div');
     dialogOverlay.className = 'dialog-overlay';
     dialogOverlay.id = 'globalDialogOverlay';
     
-    let dialogIcon = icon;
-    if (!icon) {
-        switch(type) {
-            case 'success': dialogIcon = '✓'; break;
-            case 'warning': dialogIcon = '⚠️'; break;
-            case 'danger': dialogIcon = '🗑️'; break;
-            case 'info': dialogIcon = 'ℹ️'; break;
-            default: dialogIcon = 'ℹ️';
-        }
+    let icon = '';
+    switch(type) {
+        case 'success': icon = '✓'; break;
+        case 'warning': icon = '⚠️'; break;
+        case 'danger': icon = '🗑️'; break;
+        default: icon = 'ℹ️';
     }
     
     dialogOverlay.innerHTML = `
         <div class="dialog-box">
             <div class="dialog-header">
-                <div class="dialog-icon ${type}">${dialogIcon}</div>
+                <div class="dialog-icon ${type}">${icon}</div>
                 <h3 class="dialog-title">${title}</h3>
             </div>
             <div class="dialog-content">${message}</div>
             <div class="dialog-actions">
-                ${showCancel ? `<button class="dialog-btn dialog-btn-secondary" id="dialogCancelBtn">${cancelText}</button>` : ''}
                 <button class="dialog-btn dialog-btn-${type === 'danger' ? 'danger' : type === 'success' ? 'success' : 'primary'}" id="dialogConfirmBtn">
                     ${confirmText}
                 </button>
@@ -673,7 +606,6 @@ function showDialog(options) {
     }, 10);
     
     const confirmBtn = document.getElementById('dialogConfirmBtn');
-    const cancelBtn = document.getElementById('dialogCancelBtn');
     
     const closeDialog = () => {
         dialogOverlay.classList.remove('active');
@@ -689,40 +621,11 @@ function showDialog(options) {
         closeDialog();
     });
     
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => {
-            if (onCancel) onCancel();
-            closeDialog();
-        });
-    }
-    
     dialogOverlay.addEventListener('click', (e) => {
         if (e.target === dialogOverlay) {
-            if (onCancel) onCancel();
             closeDialog();
         }
     });
-    
-    const handleEscape = (e) => {
-        if (e.key === 'Escape') {
-            if (onCancel) onCancel();
-            closeDialog();
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
-}
-
-function hideDialog() {
-    const dialogOverlay = document.getElementById('globalDialogOverlay');
-    if (dialogOverlay) {
-        dialogOverlay.classList.remove('active');
-        setTimeout(() => {
-            if (dialogOverlay.parentNode) {
-                dialogOverlay.parentNode.removeChild(dialogOverlay);
-            }
-        }, 300);
-    }
 }
 
 function showSuccessDialog(title, message) {
@@ -730,8 +633,7 @@ function showSuccessDialog(title, message) {
         type: 'success',
         title: title,
         message: message,
-        confirmText: 'Got it!',
-        showCancel: false
+        confirmText: 'Got it!'
     });
 }
 
@@ -739,54 +641,110 @@ function showDeleteConfirmation(itemName, itemType, onDelete) {
     showDialog({
         type: 'danger',
         title: `Delete ${itemType}`,
-        message: `Are you sure you want to delete <strong>"${itemName}"</strong>? This action cannot be undone.`,
+        message: `Are you sure you want to delete <strong>"${itemName}"</strong>?`,
         confirmText: 'Delete',
-        cancelText: 'Keep it',
         onConfirm: onDelete
     });
 }
 
-function showAddSuccessDialog(itemName, itemType) {
-    showDialog({
-        type: 'success',
-        title: `${itemType} Added`,
-        message: `"${itemName}" has been successfully added to your ${itemType.toLowerCase()}!`,
-        confirmText: 'Awesome!',
-        showCancel: false
-    });
+// ============================================
+// EMAIL NOTIFICATION FUNCTIONS - OPTIMIZED
+// ============================================
+
+// Initialize EmailJS only when needed
+function initEmailJS() {
+    if (typeof emailjs !== 'undefined' && !emailjs._isInitialized) {
+        emailjs.init(EMAILJS_CONFIG.userId);
+        console.log('✅ EmailJS initialized');
+    }
 }
 
-function showUpdateSuccessDialog(itemName, itemType) {
-    showDialog({
-        type: 'success',
-        title: `${itemType} Updated`,
-        message: `"${itemName}" has been successfully updated!`,
-        confirmText: 'Great!',
-        showCancel: false
-    });
+// Check and send notifications (async but non-blocking)
+async function checkAllNotifications() {
+    console.log('🔔 Checking notifications...');
+    
+    // Only check if we have a cached profile
+    if (!cachedUserProfile) return;
+    
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+    
+    const currentBalance = parseFloat(cachedUserProfile.current_balance) || 0;
+    const currency = cachedUserProfile.currency || 'USD';
+    
+    // Check low balance (only if < $1000)
+    if (currentBalance < 1000) {
+        console.log('⚠️ Low balance detected');
+        
+        // Check if we sent this recently
+        const lastSentKey = `lastLowBalanceEmail_${user.id}`;
+        const lastSent = localStorage.getItem(lastSentKey);
+        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+        
+        if (!lastSent || parseInt(lastSent) < twentyFourHoursAgo) {
+            // Send in background without blocking UI
+            setTimeout(() => {
+                sendLowBalanceEmail(user, currentBalance, currency);
+            }, 5000); // Wait 5 seconds before sending
+        }
+    }
 }
 
-function showErrorDialog(title, message) {
-    showDialog({
-        type: 'danger',
-        title: title,
-        message: message,
-        confirmText: 'Try Again',
-        showCancel: false
-    });
+// Send email in background
+async function sendLowBalanceEmail(user, balance, currency) {
+    try {
+        initEmailJS();
+        
+        const templateParams = {
+            name: user.user_metadata?.name || user.email,
+            balance: formatCurrency(balance, currency),
+            threshold: formatCurrency(1000, currency),
+            dashboard_url: window.location.origin + '/dashboard.html',
+            to_email: user.email
+        };
+        
+        const response = await emailjs.send(
+            EMAILJS_CONFIG.serviceId,
+            EMAILJS_CONFIG.templateId,
+            templateParams
+        );
+        
+        if (response.status === 200) {
+            localStorage.setItem(`lastLowBalanceEmail_${user.id}`, Date.now().toString());
+            console.log('✅ Low balance email sent');
+        }
+    } catch (error) {
+        console.error('Email failed:', error);
+    }
 }
 
-// Load and display real data from onboarding
+// ============================================
+// MAIN DASHBOARD FUNCTIONS - OPTIMIZED
+// ============================================
+
+// Load dashboard data FAST
 async function loadDashboardData() {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) {
-            console.log('No user found in loadDashboardData');
             hideLoading();
             showErrorOnPage('Please sign in to view your dashboard.');
             return;
         }
 
+        // Use cached data if available and recent (last 30 seconds)
+        if (cachedUserProfile && (Date.now() - cachedUserProfile._timestamp < 30000)) {
+            console.log('📊 Using cached profile data');
+            updateDashboardWithRealData(cachedUserProfile);
+            hideLoading();
+            
+            // Check notifications in background
+            setTimeout(checkAllNotifications, 1000);
+            return;
+        }
+
+        // Fetch fresh data
+        console.log('📊 Fetching fresh profile data');
         const { data: profile, error } = await supabaseClient
             .from('user_profiles')
             .select('*')
@@ -794,721 +752,191 @@ async function loadDashboardData() {
             .single();
 
         if (error) {
-            console.error('Error loading profile:', error);
             hideLoading();
-            
-            // If profile doesn't exist, show onboarding link
             if (error.code === 'PGRST116') {
                 showErrorOnPage('Please complete onboarding first.');
-                return;
+            } else {
+                showDialog({
+                    type: 'danger',
+                    title: 'Error Loading Dashboard',
+                    message: 'Failed to load your financial data. Please try again.',
+                    confirmText: 'OK'
+                });
             }
-            
-            showErrorDialog('Error Loading Dashboard', 'Failed to load your financial data. Please try again.');
             return;
         }
 
-        // Extract currency from profile (default to USD if not set)
-        const currency = profile.currency || 'USD';
-        
-        setTimeout(() => {
-            // Pass currency to update function
-            updateDashboardWithRealData(profile, currency, user);
-            hideLoading();
-        }, 500);
-        
-    } catch (error) {
-        console.error('Error loading dashboard data:', error);
+        // Cache the profile data
+        profile._timestamp = Date.now();
+        cachedUserProfile = profile;
+
+        // Update UI immediately
+        updateDashboardWithRealData(profile);
         hideLoading();
-        showErrorDialog('Error', 'An error occurred while loading your dashboard. Please refresh the page.');
-    }
-}
+        
+        // Check notifications in background (non-blocking)
+        setTimeout(checkAllNotifications, 1000);
 
-// ============================================
-// EMAIL NOTIFICATION FUNCTIONS - FIXED VERSION
-// ============================================
-
-// Initialize EmailJS
-function initEmailJS() {
-    if (typeof emailjs !== 'undefined') {
-        emailjs.init(EMAILJS_CONFIG.userId);
-        console.log('✅ EmailJS initialized');
-    } else {
-        console.log('⚠️ EmailJS not loaded yet');
-    }
-}
-
-// Send low balance email
-async function sendLowBalanceEmail(userEmail, userName, balance, threshold, currency) {
-    try {
-        // Initialize EmailJS
-        initEmailJS();
-        
-        // Wait a moment for initialization
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Prepare email data
-        const templateParams = {
-            name: userName || 'User',
-            balance: formatCurrency(balance, currency),
-            threshold: formatCurrency(threshold, currency),
-            dashboard_url: window.location.origin + '/dashboard.html',
-            to_email: userEmail
-        };
-        
-        console.log('📧 Sending LOW BALANCE email with:', templateParams);
-        
-        // Send email
-        const response = await emailjs.send(
-            EMAILJS_CONFIG.serviceId,
-            EMAILJS_CONFIG.templateId,
-            templateParams
-        );
-        
-        console.log('✅ Low balance email sent successfully:', response.status);
-        return true;
-        
     } catch (error) {
-        console.error('❌ Low balance email failed:', error);
-        return false;
+        console.error('Error loading dashboard:', error);
+        hideLoading();
+        showDialog({
+            type: 'danger',
+            title: 'Error',
+            message: 'An error occurred. Please refresh the page.',
+            confirmText: 'OK'
+        });
     }
 }
 
-// FIXED: Check and send low balance notification - NO MORE SPAM
-async function checkAndSendLowBalanceNotification(profile, currency, user) {
-    const LOW_BALANCE_THRESHOLD = 1000; // $1000 threshold
-    
-    // Debug: Log current values
-    console.log('🔍 Checking low balance notification:');
-    console.log('  - Current balance:', profile.current_balance);
-    console.log('  - Threshold:', LOW_BALANCE_THRESHOLD);
-    
-    // FIX: Ensure balance is a number and compare correctly
-    const currentBalance = parseFloat(profile.current_balance) || 0;
-    
-    // CRITICAL FIX: ONLY send if balance is BELOW the threshold
-    // This was the bug - it was sending emails when balance was ABOVE threshold
-    if (currentBalance < LOW_BALANCE_THRESHOLD) {
-        console.log('⚠️ Low balance detected! Sending email...');
-        
-        // Check if we sent this recently (last 24 hours)
-        const lastSentKey = `lastLowBalanceEmail_${user.id}`;
-        const lastSent = localStorage.getItem(lastSentKey);
-        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-        
-        if (!lastSent || parseInt(lastSent) < twentyFourHoursAgo) {
-            console.log('📧 Sending low balance email...');
-            const sent = await sendLowBalanceEmail(
-                user.email,
-                user.user_metadata?.name || user.email,
-                currentBalance,
-                LOW_BALANCE_THRESHOLD,
-                currency
-            );
-            
-            if (sent) {
-                localStorage.setItem(lastSentKey, Date.now().toString());
-                console.log('✅ Low balance email sent to:', user.email);
-                return true;
-            }
-        } else {
-            console.log('⏰ Low balance email already sent in last 24 hours');
-        }
-    } else {
-        console.log('✅ Balance is ABOVE threshold, NO email needed');
-        console.log('  - Balance:', currentBalance);
-        console.log('  - Threshold:', LOW_BALANCE_THRESHOLD);
-        console.log('  - Condition (balance < threshold?):', currentBalance < LOW_BALANCE_THRESHOLD);
-    }
-    
-    return false;
-}
+// Update dashboard with real data (optimized)
+function updateDashboardWithRealData(profile) {
+    if (!profile) return;
 
-// FIXED: Check and send shortfall notification - NO MORE SPAM
-async function checkAndSendShortfallNotification(profile, currency, user) {
+    // Calculate values
     const totalIncome = profile.income_sources?.reduce((sum, source) => sum + (parseFloat(source.amount) || 0), 0) || 0;
     const totalExpenses = profile.expenses?.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0) || 0;
     const monthlyNetCashFlow = totalIncome - totalExpenses;
     const weeklyNetCashFlow = monthlyNetCashFlow / 4.33;
-    const currentBalance = parseFloat(profile.current_balance) || 0;
-    
-    console.log('🔍 Checking shortfall notification:');
-    console.log('  - Weekly cash flow:', weeklyNetCashFlow);
-    
-    // ONLY send if we have NEGATIVE cash flow (burning cash)
-    if (weeklyNetCashFlow < 0) {
-        const daysToShortfall = Math.abs(currentBalance / (weeklyNetCashFlow / 7));
-        
-        console.log('  - Days to shortfall:', daysToShortfall);
-        console.log('  - Should send? (days <= 14):', daysToShortfall <= 14);
-        
-        // Only alert if shortfall within 14 days
-        if (daysToShortfall <= 14) {
-            console.log('⚠️ Shortfall detected within 14 days!');
-            
-            const lastSentKey = `lastShortfallEmail_${user.id}`;
-            const lastSent = localStorage.getItem(lastSentKey);
-            const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-            
-            if (!lastSent || parseInt(lastSent) < twentyFourHoursAgo) {
-                console.log('📧 Sending shortfall email...');
-                
-                const templateParams = {
-                    name: user.user_metadata?.name || user.email,
-                    balance: formatCurrency(currentBalance, currency),
-                    threshold: `${Math.ceil(daysToShortfall)} days`,
-                    dashboard_url: window.location.origin + '/dashboard.html',
-                    to_email: user.email,
-                    warning_type: 'cash_shortfall'
-                };
-                
-                try {
-                    initEmailJS();
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    const response = await emailjs.send(
-                        EMAILJS_CONFIG.serviceId,
-                        EMAILJS_CONFIG.templateId,
-                        templateParams
-                    );
-                    
-                    if (response.status === 200) {
-                        localStorage.setItem(lastSentKey, Date.now().toString());
-                        console.log('✅ Shortfall email sent to:', user.email);
-                        return true;
-                    }
-                } catch (error) {
-                    console.error('❌ Shortfall email failed:', error);
-                }
-            } else {
-                console.log('⏰ Shortfall email already sent in last 24 hours');
-            }
-        } else {
-            console.log('✅ Shortfall not imminent (>14 days), NO email needed');
-        }
-    } else {
-        console.log('✅ Positive cash flow, NO shortfall email needed');
-    }
-    
-    return false;
-}
+    const currency = profile.currency || 'USD';
 
-// FIXED: Check and send weekly summary (runs every Monday only)
-async function checkAndSendWeeklySummary(profile, currency, user) {
-    // Only send on Mondays
-    const today = new Date();
-    if (today.getDay() !== 1) { // 1 = Monday
-        console.log('📅 Not Monday, skipping weekly summary');
-        return false;
-    }
-    
-    console.log('📅 Monday detected, checking weekly summary...');
-    
-    // Check if we already sent this week
-    const lastSentKey = `lastWeeklySummary_${user.id}`;
-    const lastSent = localStorage.getItem(lastSentKey);
-    const thisMonday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + 1);
-    
-    if (lastSent && parseInt(lastSent) >= thisMonday.getTime()) {
-        console.log('⏰ Weekly summary already sent this week');
-        return false;
-    }
-    
-    const totalIncome = profile.income_sources?.reduce((sum, source) => sum + (parseFloat(source.amount) || 0), 0) || 0;
-    const totalExpenses = profile.expenses?.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0) || 0;
-    const monthlyNetCashFlow = totalIncome - totalExpenses;
-    const weeklyNetCashFlow = monthlyNetCashFlow / 4.33;
-    const currentBalance = parseFloat(profile.current_balance) || 0;
-    
-    // Send weekly summary
-    const templateParams = {
-        name: user.user_metadata?.name || user.email,
-        balance: formatCurrency(currentBalance, currency),
-        income: formatCurrency(totalIncome, currency),
-        expenses: formatCurrency(totalExpenses, currency),
-        net_cash_flow: formatCurrency(monthlyNetCashFlow, currency),
-        weekly_cash_flow: formatCurrency(weeklyNetCashFlow, currency),
-        dashboard_url: window.location.origin + '/dashboard.html',
-        to_email: user.email,
-        week_start: today.toLocaleDateString(),
-        week_end: new Date(today.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString()
-    };
-    
-    try {
-        initEmailJS();
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        console.log('📧 Sending weekly summary email...');
-        const response = await emailjs.send(
-            EMAILJS_CONFIG.serviceId,
-            EMAILJS_CONFIG.templateId,
-            templateParams
-        );
-        
-        if (response.status === 200) {
-            localStorage.setItem(lastSentKey, Date.now().toString());
-            console.log('✅ Weekly summary email sent to:', user.email);
-            return true;
-        }
-    } catch (error) {
-        console.error('❌ Weekly summary email failed:', error);
-    }
-    
-    return false;
-}
-
-// FIXED: Main notification check function
-async function checkAllNotifications(profile, currency, user) {
-    console.log('🔔 Starting notification checks...');
-    console.log('💰 Current balance:', profile.current_balance);
-    
-    try {
-        // Check low balance - FIXED: Won't spam if balance is healthy
-        await checkAndSendLowBalanceNotification(profile, currency, user);
-        
-        // Check shortfall - FIXED: Only sends if actually burning cash
-        await checkAndSendShortfallNotification(profile, currency, user);
-        
-        // Check weekly summary - Only on Mondays
-        await checkAndSendWeeklySummary(profile, currency, user);
-        
-        console.log('✅ All notification checks completed');
-        
-    } catch (error) {
-        console.error('❌ Error checking notifications:', error);
-    }
-}
-
-// Test email function
-window.testEmail = async function() {
-    console.log('🔄 Testing email...');
-    
-    // Get current user
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    
-    if (!user) {
-        alert('Please login first');
-        return;
-    }
-    
-    // Test with dummy data
-    const templateParams = {
-        name: user.user_metadata?.name || 'Test User',
-        balance: formatCurrency(500, 'USD'),
-        threshold: formatCurrency(1000, 'USD'),
-        dashboard_url: window.location.origin + '/dashboard.html',
-        to_email: user.email
-    };
-    
-    try {
-        initEmailJS();
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const response = await emailjs.send(
-            EMAILJS_CONFIG.serviceId,
-            EMAILJS_CONFIG.templateId,
-            templateParams
-        );
-        
-        if (response.status === 200) {
-            alert('✅ Test email sent! Check your inbox (and spam folder)');
-        } else {
-            alert('❌ Failed to send email. Check console for errors.');
-        }
-    } catch (error) {
-        console.error('Test email failed:', error);
-        alert('❌ Email failed: ' + (error.text || error.message));
-    }
-};
-
-// Test low balance notification
-window.testLowBalance = async function() {
-    console.log('🔄 Testing low balance notification...');
-    
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-        alert('Please login first');
-        return;
-    }
-    
-    const { data: profile } = await supabaseClient
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-    
-    if (profile) {
-        // Temporarily set low balance for testing
-        const testProfile = { ...profile, current_balance: 500 };
-        const currency = profile.currency || 'USD';
-        
-        await checkAndSendLowBalanceNotification(testProfile, currency, user);
-        alert('Test completed. Check console for details.');
-    }
-};
-
-// ============================================
-// END EMAIL NOTIFICATION FUNCTIONS
-// ============================================
-
-// Update function signature to accept currency and user parameters
-function updateDashboardWithRealData(profile, currency, user) {
-    if (!profile) {
-        showErrorDialog('No Data Found', 'No profile data found. Please complete the onboarding process.');
-        return;
-    }
-
-    // 1. RECALCULATE BURN RATE FROM REAL DATA
-    const totalIncome = profile.income_sources?.reduce((sum, source) => sum + (parseFloat(source.amount) || 0), 0) || 0;
-    const totalExpenses = profile.expenses?.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0) || 0;
-    const monthlyBurnRate = totalExpenses;
-    const monthlyNetCashFlow = totalIncome - totalExpenses;
-    const weeklyBurnRate = monthlyBurnRate / 4.33; // Average weeks per month
-    const weeklyNetCashFlow = monthlyNetCashFlow / 4.33;
-
+    // Update main metrics immediately
     const balanceElement = document.querySelector('.balance-amount');
     const burnRateElement = document.querySelector('.burn-rate');
     
     if (balanceElement) balanceElement.textContent = formatCurrency(profile.current_balance, currency);
     
-    // 2. USE THAT BURN RATE IN FORECAST + RUNWAY
-    // 3. ALWAYS SHOW UNITS (monthly and weekly)
     if (burnRateElement) {
         burnRateElement.innerHTML = `
-            <div>${formatCurrency(monthlyBurnRate, currency)} <span style="color: #6b7280; font-size: 0.9em">/month</span></div>
-            <div style="font-size: 0.9em; color: #6b7280;">(${formatCurrency(weeklyBurnRate, currency)}/week)</div>
+            <div>${formatCurrency(totalExpenses, currency)} <span style="color: #6b7280; font-size: 0.9em">/month</span></div>
+            <div style="font-size: 0.9em; color: #6b7280;">(${formatCurrency(totalExpenses/4.33, currency)}/week)</div>
         `;
     }
 
-    // 4-6. All features integrated into forecast function
-    updateEnhancedForecast(profile.current_balance, totalIncome, totalExpenses, monthlyBurnRate, weeklyBurnRate, monthlyNetCashFlow, weeklyNetCashFlow, currency);
-    updateEnhancedTimelineBar(profile.current_balance, monthlyBurnRate, monthlyNetCashFlow);
+    // Update sections
+    updateForecast(profile.current_balance, totalIncome, totalExpenses, weeklyNetCashFlow, currency);
+    updateTimelineBar(profile.current_balance, weeklyNetCashFlow);
     updateMoneyInSection(profile.income_sources, currency, totalIncome);
     updateMoneyOutSection(profile.expenses, currency, totalExpenses);
-    
-    // REMOVED: The annoying alert section that shows every time
-    // updateAlertsSection(profile.invoices, currency, profile.current_balance, monthlyBurnRate, totalIncome, monthlyNetCashFlow);
-    
-    // 7. Check and send notifications (after dashboard loads)
-    setTimeout(async () => {
-        await checkAllNotifications(profile, currency, user);
-    }, 3000); // Wait 3 seconds after dashboard loads
 }
 
-function updateEnhancedForecast(currentBalance, totalIncome, totalExpenses, monthlyBurnRate, weeklyBurnRate, monthlyNetCashFlow, weeklyNetCashFlow, currency) {
+// Optimized forecast update
+function updateForecast(currentBalance, totalIncome, totalExpenses, weeklyNetCashFlow, currency) {
     const forecastElement = document.querySelector('.forecast-insight .insight-text');
     if (!forecastElement) return;
 
-    // 2. USE THAT BURN RATE IN FORECAST + RUNWAY
-    let weeksOfRunway = 0;
-    let cashHealthLabel = '';
-    let cashHealthClass = '';
-    let recommendation = '';
-    let statusIcon = '📊';
-    
-    if (weeklyNetCashFlow < 0) {
-        // Burning cash
-        weeksOfRunway = currentBalance / Math.abs(weeklyNetCashFlow);
-        
-        if (weeksOfRunway < 2) {
-            cashHealthLabel = 'CRITICAL';
-            cashHealthClass = 'cash-health-critical';
-            recommendation = '🚨 Immediate action required!';
-            statusIcon = '🚨';
-        } else if (weeksOfRunway < 4) {
-            cashHealthLabel = 'LOW';
-            cashHealthClass = 'cash-health-low';
-            recommendation = '⚠️ Consider reducing expenses.';
-            statusIcon = '⚠️';
-        } else if (weeksOfRunway < 8) {
-            cashHealthLabel = 'MODERATE';
-            cashHealthClass = 'cash-health-moderate';
-            recommendation = 'Monitor expenses closely.';
-            statusIcon = '📉';
-        } else {
-            cashHealthLabel = 'STABLE';
-            cashHealthClass = 'cash-health-stable';
-            recommendation = 'Maintain current trajectory.';
-            statusIcon = '📊';
-        }
-    } else if (weeklyNetCashFlow > 0) {
-        // Growing cash
-        weeksOfRunway = Infinity;
-        cashHealthLabel = 'GROWING';
-        cashHealthClass = 'cash-health-growing';
-        recommendation = 'Consider reinvesting profits.';
-        statusIcon = '📈';
-    } else {
-        // Break-even
-        weeksOfRunway = Infinity;
-        cashHealthLabel = 'NEUTRAL';
-        cashHealthClass = 'cash-health-neutral';
-        recommendation = 'Look for growth opportunities.';
-        statusIcon = '⚖️';
-    }
-
-    // 4. USE A CLEAN INSIGHT TEXT TEMPLATE
     let forecastMessage = '';
     
     if (weeklyNetCashFlow < 0) {
+        const weeksOfRunway = currentBalance / Math.abs(weeklyNetCashFlow);
+        let status = 'STABLE';
+        let color = '#10b981';
+        
+        if (weeksOfRunway < 2) {
+            status = 'CRITICAL';
+            color = '#dc2626';
+        } else if (weeksOfRunway < 4) {
+            status = 'LOW';
+            color = '#d97706';
+        } else if (weeksOfRunway < 8) {
+            status = 'MODERATE';
+            color = '#2563eb';
+        }
+        
         forecastMessage = `
-            ${statusIcon} <span class="insight-highlight">Burn Analysis:</span> 
-            <span class="${cashHealthClass}" style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;">${cashHealthLabel}</span><br>
-            
-            • <strong>Current burn:</strong> ${formatCurrency(weeklyBurnRate, currency)}/week 
-            (<span style="color: #ef4444;">↓${formatCurrency(Math.abs(weeklyNetCashFlow), currency)} net</span>)<br>
-            
-            • <strong>Runway:</strong> <span class="insight-highlight">${weeksOfRunway === Infinity ? '∞' : weeksOfRunway.toFixed(1)} weeks</span><br>
-            
-            • <strong>3-week forecast:</strong> ${formatCurrency(Math.max(0, currentBalance + (weeklyNetCashFlow * 3)), currency)} 
-            (<span style="color: #ef4444;">↓${formatCurrency(Math.abs(weeklyNetCashFlow * 3), currency)} decrease</span>)<br>
-            
-            <span style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #fef3c7; border-radius: 6px; font-size: 12px;">
-                💡 <strong>Recommendation:</strong> ${recommendation}
-            </span>
+            📊 <span style="color: ${color}; font-weight: 600;">${status}</span> cash position<br>
+            • Runway: ${weeksOfRunway.toFixed(1)} weeks<br>
+            • Weekly burn: ${formatCurrency(Math.abs(weeklyNetCashFlow), currency)}<br>
+            • 4-week forecast: ${formatCurrency(Math.max(0, currentBalance + (weeklyNetCashFlow * 4)), currency)}
         `;
     } else if (weeklyNetCashFlow > 0) {
-        const growthAmount = weeklyNetCashFlow * 3;
         forecastMessage = `
-            ${statusIcon} <span class="insight-highlight">Growth Analysis:</span> 
-            <span class="${cashHealthClass}" style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;">${cashHealthLabel}</span><br>
-            
-            • <strong>Weekly growth:</strong> ${formatCurrency(weeklyNetCashFlow, currency)}/week 
-            (<span style="color: #10b981;">↑ Positive cash flow</span>)<br>
-            
-            • <strong>Runway:</strong> <span class="insight-highlight" style="color: #10b981;">∞ weeks</span> (sustainable)<br>
-            
-            • <strong>3-week forecast:</strong> ${formatCurrency(currentBalance + growthAmount, currency)} 
-            (<span style="color: #10b981;">↑${formatCurrency(growthAmount, currency)} increase</span>)<br>
-            
-            <span style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #d1fae5; border-radius: 6px; font-size: 12px;">
-                💡 <strong>Recommendation:</strong> ${recommendation}
-            </span>
+            📈 <span style="color: #10b981; font-weight: 600;">GROWING</span> cash position<br>
+            • Weekly growth: ${formatCurrency(weeklyNetCashFlow, currency)}<br>
+            • 4-week forecast: ${formatCurrency(currentBalance + (weeklyNetCashFlow * 4), currency)}<br>
+            • Sustainable runway
         `;
     } else {
         forecastMessage = `
-            ${statusIcon} <span class="insight-highlight">Stability Analysis:</span> 
-            <span class="${cashHealthClass}" style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 5px;">${cashHealthLabel}</span><br>
-            
-            • <strong>Weekly cash flow:</strong> ${formatCurrency(weeklyNetCashFlow, currency)}/week 
-            (<span style="color: #6b7280;">⚖️ Break-even</span>)<br>
-            
-            • <strong>Runway:</strong> <span class="insight-highlight">Maintained</span><br>
-            
-            • <strong>3-week forecast:</strong> ${formatCurrency(currentBalance, currency)} 
-            (no change expected)<br>
-            
-            <span style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #f3f4f6; border-radius: 6px; font-size: 12px;">
-                💡 <strong>Recommendation:</strong> ${recommendation}
-            </span>
+            ⚖️ <span style="color: #6b7280; font-weight: 600;">STABLE</span> cash position<br>
+            • Break-even cash flow<br>
+            • Balance maintained<br>
+            • Consider growth opportunities
         `;
     }
 
     forecastElement.innerHTML = forecastMessage;
 }
 
-function updateEnhancedTimelineBar(currentBalance, monthlyBurnRate, monthlyNetCashFlow) {
+// Optimized timeline bar
+function updateTimelineBar(currentBalance, weeklyNetCashFlow) {
     const timelineFill = document.querySelector('.timeline-fill');
     if (!timelineFill) return;
 
-    const weeklyNetCashFlow = monthlyNetCashFlow / 4.33; // Average weeks per month
-    
-    // Calculate weeks of runway before cash runs out
-    let weeksOfRunway = 0;
-    let timelineWidth = 100;
+    let width = 100;
     let gradient = '';
     
     if (weeklyNetCashFlow < 0) {
-        // Burning cash - calculate weeks until cash runs out
-        weeksOfRunway = currentBalance / Math.abs(weeklyNetCashFlow);
+        const weeksOfRunway = currentBalance / Math.abs(weeklyNetCashFlow);
+        width = Math.min((weeksOfRunway / 12) * 100, 100);
         
-        // Map weeks of runway to timeline width (max 12 weeks shown)
-        const maxWeeksToShow = 12;
-        if (weeksOfRunway <= maxWeeksToShow) {
-            // Convert weeks to percentage (100% = maxWeeksToShow weeks)
-            timelineWidth = (weeksOfRunway / maxWeeksToShow) * 100;
-        } else {
-            // More than max weeks - show full bar
-            timelineWidth = 100;
-        }
-        
-        // Set gradient color based on severity
         if (weeksOfRunway < 2) {
-            // Critical: Red
             gradient = 'linear-gradient(90deg, #ef4444, #dc2626)';
         } else if (weeksOfRunway < 4) {
-            // Low: Orange
             gradient = 'linear-gradient(90deg, #f59e0b, #d97706)';
         } else if (weeksOfRunway < 8) {
-            // Moderate: Yellow to orange
             gradient = 'linear-gradient(90deg, #eab308, #f59e0b)';
         } else {
-            // Stable: Yellow to green
             gradient = 'linear-gradient(90deg, #eab308, #10b981)';
         }
     } else if (weeklyNetCashFlow > 0) {
-        // Growing cash - show full green bar (infinite runway)
-        weeksOfRunway = Infinity;
-        timelineWidth = 100;
         gradient = 'linear-gradient(90deg, #10b981, #059669)';
     } else {
-        // Break-even - show full yellow bar
-        weeksOfRunway = Infinity;
-        timelineWidth = 100;
         gradient = 'linear-gradient(90deg, #eab308, #d97706)';
     }
     
-    // Apply the timeline fill
-    timelineFill.style.width = `${Math.min(timelineWidth, 100)}%`;
+    timelineFill.style.width = `${width}%`;
     timelineFill.style.background = gradient;
-    
-    // Add shadow based on status
-    let shadowColor;
-    if (weeklyNetCashFlow < 0) {
-        if (weeksOfRunway < 2) {
-            shadowColor = 'rgba(239, 68, 68, 0.4)';
-        } else if (weeksOfRunway < 4) {
-            shadowColor = 'rgba(245, 158, 11, 0.4)';
-        } else if (weeksOfRunway < 8) {
-            shadowColor = 'rgba(234, 179, 8, 0.4)';
-        } else {
-            shadowColor = 'rgba(234, 179, 8, 0.3)';
-        }
-    } else if (weeklyNetCashFlow > 0) {
-        shadowColor = 'rgba(16, 185, 129, 0.4)';
-    } else {
-        shadowColor = 'rgba(234, 179, 8, 0.3)';
-    }
-    
-    timelineFill.style.boxShadow = `0 2px 8px ${shadowColor}`;
-    
-    // Update timeline markers to show where cash runs out
-    updateTimelineMarkers(currentBalance, weeklyNetCashFlow, weeksOfRunway);
 }
 
-function updateTimelineMarkers(currentBalance, weeklyNetCashFlow, weeksOfRunway) {
-    const timelineBar = document.querySelector('.timeline-bar');
-    if (!timelineBar) return;
-
-    // Remove existing markers
-    const existingMarkers = timelineBar.querySelectorAll('.timeline-marker');
-    existingMarkers.forEach(marker => marker.remove());
-
-    // Always show the standard week markers (1w, 2w, 3w)
-    const standardMarkers = [
-        { week: 1, position: 33.33 },
-        { week: 2, position: 66.66 },
-        { week: 3, position: 100 }
-    ];
-    
-    standardMarkers.forEach(({ week, position }) => {
-        const marker = document.createElement('div');
-        marker.className = 'timeline-marker';
-        marker.style.cssText = `
-            position: absolute;
-            left: ${position}%;
-            top: -5px;
-            width: 1px;
-            height: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            z-index: 1;
-        `;
-        
-        const label = document.createElement('div');
-        label.style.cssText = `
-            position: absolute;
-            top: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            color: #6b7280;
-            white-space: nowrap;
-        `;
-        label.textContent = `${week}w`;
-        
-        marker.appendChild(label);
-        timelineBar.appendChild(marker);
-    });
-
-    // If burning cash, show cash shortage warning marker
-    if (weeklyNetCashFlow < 0 && weeksOfRunway !== Infinity) {
-        const maxWeeksToShow = 12;
-        let markerPosition = 0;
-        
-        if (weeksOfRunway <= maxWeeksToShow) {
-            markerPosition = (weeksOfRunway / maxWeeksToShow) * 100;
-        } else {
-            markerPosition = 100;
-        }
-        
-        // Only show warning marker if it's within the visible timeline (not beyond 100%)
-        if (markerPosition <= 100) {
-            const warningMarker = document.createElement('div');
-            warningMarker.className = 'timeline-marker warning';
-            warningMarker.style.cssText = `
-                position: absolute;
-                left: ${markerPosition}%;
-                top: -8px;
-                width: 2px;
-                height: 16px;
-                background: #ef4444;
-                z-index: 2;
-            `;
-            
-            const warningLabel = document.createElement('div');
-            warningLabel.style.cssText = `
-                position: absolute;
-                top: 18px;
-                left: 50%;
-                transform: translateX(-50%);
-                font-size: 10px;
-                color: #ef4444;
-                white-space: nowrap;
-                font-weight: 600;
-            `;
-            
-            if (weeksOfRunway <= maxWeeksToShow) {
-                warningLabel.textContent = `${weeksOfRunway.toFixed(1)}w`;
-            } else {
-                warningLabel.textContent = `>${maxWeeksToShow}w`;
-            }
-            
-            warningMarker.appendChild(warningLabel);
-            timelineBar.appendChild(warningMarker);
-            
-            // Add a tooltip on hover
-            warningMarker.addEventListener('mouseenter', () => {
-                const tooltip = document.createElement('div');
-                tooltip.style.cssText = `
-                    position: absolute;
-                    top: -40px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background: #111827;
-                    color: white;
-                    padding: 6px 10px;
-                    border-radius: 6px;
-                    font-size: 11px;
-                    white-space: nowrap;
-                    z-index: 100;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                `;
-                tooltip.textContent = `Cash runs out in ${weeksOfRunway.toFixed(1)} weeks`;
-                warningMarker.appendChild(tooltip);
-                
-                warningMarker.addEventListener('mouseleave', () => {
-                    if (tooltip.parentNode) {
-                        tooltip.parentNode.removeChild(tooltip);
-                    }
-                }, { once: true });
-            });
-        }
-    }
-}
-
+// Optimized money in section
 function updateMoneyInSection(incomeSources, currency, totalIncome) {
     const moneyInSection = document.querySelector('.money-in');
     if (!moneyInSection) return;
 
+    const moneyInList = moneyInSection.querySelector('.transaction-list');
+    if (!moneyInList) return;
+
+    moneyInList.innerHTML = '';
+
+    if (incomeSources && incomeSources.length > 0) {
+        // Use DocumentFragment for faster DOM updates
+        const fragment = document.createDocumentFragment();
+        
+        incomeSources.forEach((source, index) => {
+            const listItem = document.createElement('li');
+            listItem.className = 'transaction-item';
+            listItem.innerHTML = `
+                <div class="transaction-info">
+                    <div class="transaction-name">${escapeHtml(source.name)}</div>
+                    <div class="transaction-details">${source.type} • ${formatCurrency(source.amount, currency)}/month</div>
+                </div>
+                <div class="transaction-amount">${formatCurrency(source.amount, currency)}</div>
+                <div class="transaction-actions">
+                    <button class="action-btn delete-btn" onclick="deleteIncome(${index})" title="Delete">
+                        <span>🗑️</span>
+                    </button>
+                </div>
+            `;
+            fragment.appendChild(listItem);
+        });
+        
+        moneyInList.appendChild(fragment);
+    } else {
+        moneyInList.innerHTML = '<li class="transaction-item"><div class="transaction-info"><div class="transaction-name">No income sources</div></div></li>';
+    }
+
+    // Update total
     const sectionHeader = moneyInSection.querySelector('.section-header');
     if (sectionHeader) {
         const existingTotal = sectionHeader.querySelector('.section-total');
@@ -1520,44 +948,48 @@ function updateMoneyInSection(incomeSources, currency, totalIncome) {
             <div>${formatCurrency(totalIncome, currency)}</div>
             <div style="font-size: 0.8em; color: #6b7280;">monthly</div>
         `;
-        totalElement.style.cssText = 'margin-left: auto; font-weight: 600; color: var(--success); text-align: right;';
+        totalElement.style.cssText = 'margin-left: auto; font-weight: 600; color: #10b981; text-align: right;';
         sectionHeader.appendChild(totalElement);
-    }
-
-    const moneyInList = moneyInSection.querySelector('.transaction-list');
-    if (!moneyInList) return;
-
-    moneyInList.innerHTML = '';
-
-    if (incomeSources && incomeSources.length > 0) {
-        incomeSources.forEach((source, index) => {
-            const listItem = document.createElement('li');
-            listItem.className = 'transaction-item';
-            listItem.dataset.id = index;
-            listItem.dataset.type = 'income';
-            listItem.innerHTML = `
-                <div class="transaction-info">
-                    <div class="transaction-name">${escapeHtml(source.name)}</div>
-                    <div class="transaction-details">${formatIncomeType(source.type)} • ${formatCurrency(source.amount, currency)}/month</div>
-                </div>
-                <div class="transaction-amount">${formatCurrency(source.amount, currency)}</div>
-                <div class="transaction-actions">
-                    <button class="action-btn delete-btn" onclick="deleteIncome(${index})" title="Delete">
-                        <span>🗑️</span>
-                    </button>
-                </div>
-            `;
-            moneyInList.appendChild(listItem);
-        });
-    } else {
-        moneyInList.innerHTML = '<li class="transaction-item"><div class="transaction-info"><div class="transaction-name">No income sources added</div></div></li>';
     }
 }
 
+// Optimized money out section
 function updateMoneyOutSection(expenses, currency, totalExpenses) {
     const moneyOutSection = document.querySelector('.money-out');
     if (!moneyOutSection) return;
 
+    const moneyOutList = moneyOutSection.querySelector('.transaction-list');
+    if (!moneyOutList) return;
+
+    moneyOutList.innerHTML = '';
+
+    if (expenses && expenses.length > 0) {
+        const fragment = document.createDocumentFragment();
+        
+        expenses.forEach((expense, index) => {
+            const listItem = document.createElement('li');
+            listItem.className = 'transaction-item';
+            listItem.innerHTML = `
+                <div class="transaction-info">
+                    <div class="transaction-name">${escapeHtml(expense.name)}</div>
+                    <div class="transaction-details">${expense.category} • ${formatCurrency(expense.amount, currency)}/month</div>
+                </div>
+                <div class="transaction-amount">${formatCurrency(expense.amount, currency)}</div>
+                <div class="transaction-actions">
+                    <button class="action-btn delete-btn" onclick="deleteExpense(${index})" title="Delete">
+                        <span>🗑️</span>
+                    </button>
+                </div>
+            `;
+            fragment.appendChild(listItem);
+        });
+        
+        moneyOutList.appendChild(fragment);
+    } else {
+        moneyOutList.innerHTML = '<li class="transaction-item"><div class="transaction-info"><div class="transaction-name">No expenses</div></div></li>';
+    }
+
+    // Update total
     const sectionHeader = moneyOutSection.querySelector('.section-header');
     if (sectionHeader) {
         const existingTotal = sectionHeader.querySelector('.section-total');
@@ -1569,41 +1001,12 @@ function updateMoneyOutSection(expenses, currency, totalExpenses) {
             <div>${formatCurrency(totalExpenses, currency)}</div>
             <div style="font-size: 0.8em; color: #6b7280;">monthly</div>
         `;
-        totalElement.style.cssText = 'margin-left: auto; font-weight: 600; color: var(--danger); text-align: right;';
+        totalElement.style.cssText = 'margin-left: auto; font-weight: 600; color: #ef4444; text-align: right;';
         sectionHeader.appendChild(totalElement);
-    }
-
-    const moneyOutList = moneyOutSection.querySelector('.transaction-list');
-    if (!moneyOutList) return;
-
-    moneyOutList.innerHTML = '';
-
-    if (expenses && expenses.length > 0) {
-        expenses.forEach((expense, index) => {
-            const listItem = document.createElement('li');
-            listItem.className = 'transaction-item';
-            listItem.dataset.id = index;
-            listItem.dataset.type = 'expense';
-            listItem.innerHTML = `
-                <div class="transaction-info">
-                    <div class="transaction-name">${escapeHtml(expense.name)}</div>
-                    <div class="transaction-details">${formatExpenseCategory(expense.category)} • ${formatCurrency(expense.amount, currency)}/month</div>
-                </div>
-                <div class="transaction-amount">${formatCurrency(expense.amount, currency)}</div>
-                <div class="transaction-actions">
-                    <button class="action-btn delete-btn" onclick="deleteExpense(${index})" title="Delete">
-                        <span>🗑️</span>
-                    </button>
-                </div>
-            `;
-            moneyOutList.appendChild(listItem);
-        });
-    } else {
-        moneyOutList.innerHTML = '<li class="transaction-item"><div class="transaction-info"><div class="transaction-name">No expenses added</div></div></li>';
     }
 }
 
-// Modal Functions
+// Modal Functions (optimized)
 function showAddIncomeModal() {
     document.getElementById('addIncomeModal').style.display = 'flex';
 }
@@ -1613,41 +1016,37 @@ function showAddExpenseModal() {
 }
 
 function closeModals() {
-    const modals = [
-        'addIncomeModal',
-        'addExpenseModal',
-        'editIncomeModal',
-        'editExpenseModal'
-    ];
-    
-    modals.forEach(modalId => {
+    ['addIncomeModal', 'addExpenseModal', 'editIncomeModal', 'editExpenseModal'].forEach(modalId => {
         const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        if (modal) modal.style.display = 'none';
     });
 }
 
-// Add new income source
+// Add new income source (optimized)
 async function addNewIncome() {
+    const name = document.getElementById('newIncomeName').value;
+    const amount = parseFloat(document.getElementById('newIncomeAmount').value);
+    const type = document.getElementById('newIncomeType').value;
+
+    if (!name || !amount || amount <= 0) {
+        showDialog({
+            type: 'danger',
+            title: 'Validation Error',
+            message: 'Please fill in all fields with valid values.',
+            confirmText: 'OK'
+        });
+        return;
+    }
+
+    showLoading('Adding...');
+
     try {
-        const name = document.getElementById('newIncomeName').value;
-        const amount = parseFloat(document.getElementById('newIncomeAmount').value);
-        const type = document.getElementById('newIncomeType').value;
-
-        if (!name || !amount || amount <= 0) {
-            showErrorDialog('Validation Error', 'Please fill in all fields with valid values.');
-            return;
-        }
-
-        showLoading('Adding income source...');
-
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('No user found');
 
         const { data: profile } = await supabaseClient
             .from('user_profiles')
-            .select('income_sources, currency')
+            .select('income_sources')
             .eq('id', user.id)
             .single();
 
@@ -1664,51 +1063,62 @@ async function addNewIncome() {
 
         if (error) throw error;
 
-        // Clear form fields
+        // Clear form and close modal
         document.getElementById('newIncomeName').value = '';
         document.getElementById('newIncomeAmount').value = '';
-        document.getElementById('newIncomeType').value = 'salary';
+        document.getElementById('addIncomeModal').style.display = 'none';
         
-        // Close modal
-        const modal = document.getElementById('addIncomeModal');
-        if (modal) modal.style.display = 'none';
+        // Invalidate cache
+        cachedUserProfile = null;
         
-        // Show success dialog instead of loading
-        hideLoading();
-        showAddSuccessDialog(name, 'Income Source');
+        // Reload data quickly
+        await loadDashboardData();
         
-        // Refresh dashboard with currency
-        setTimeout(async () => {
-            await loadDashboardData();
-        }, 1500);
+        // Show success
+        showDialog({
+            type: 'success',
+            title: 'Success!',
+            message: `"${name}" has been added to your income sources.`,
+            confirmText: 'Great!'
+        });
 
     } catch (error) {
         console.error('Error adding income:', error);
         hideLoading();
-        showErrorDialog('Error', 'Failed to add income source. Please try again.');
+        showDialog({
+            type: 'danger',
+            title: 'Error',
+            message: 'Failed to add income source. Please try again.',
+            confirmText: 'OK'
+        });
     }
 }
 
-// Add new expense
+// Add new expense (optimized)
 async function addNewExpense() {
+    const name = document.getElementById('newExpenseName').value;
+    const amount = parseFloat(document.getElementById('newExpenseAmount').value);
+    const category = document.getElementById('newExpenseCategory').value;
+
+    if (!name || !amount || amount <= 0) {
+        showDialog({
+            type: 'danger',
+            title: 'Validation Error',
+            message: 'Please fill in all fields with valid values.',
+            confirmText: 'OK'
+        });
+        return;
+    }
+
+    showLoading('Adding...');
+
     try {
-        const name = document.getElementById('newExpenseName').value;
-        const amount = parseFloat(document.getElementById('newExpenseAmount').value);
-        const category = document.getElementById('newExpenseCategory').value;
-
-        if (!name || !amount || amount <= 0) {
-            showErrorDialog('Validation Error', 'Please fill in all fields with valid values.');
-            return;
-        }
-
-        showLoading('Adding expense...');
-
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('No user found');
 
         const { data: profile } = await supabaseClient
             .from('user_profiles')
-            .select('expenses, currency')
+            .select('expenses')
             .eq('id', user.id)
             .single();
 
@@ -1725,81 +1135,55 @@ async function addNewExpense() {
 
         if (error) throw error;
 
-        // Clear form fields
+        // Clear form and close modal
         document.getElementById('newExpenseName').value = '';
         document.getElementById('newExpenseAmount').value = '';
-        document.getElementById('newExpenseCategory').value = 'housing';
-        
-        // Close modal
         closeModals();
         
-        // Show success dialog
-        hideLoading();
-        showAddSuccessDialog(name, 'Expense');
+        // Invalidate cache
+        cachedUserProfile = null;
         
-        // Refresh dashboard with currency
-        setTimeout(async () => {
-            await loadDashboardData();
-        }, 1500);
+        // Reload data quickly
+        await loadDashboardData();
+        
+        // Show success
+        showDialog({
+            type: 'success',
+            title: 'Success!',
+            message: `"${name}" has been added to your expenses.`,
+            confirmText: 'Great!'
+        });
 
     } catch (error) {
         console.error('Error adding expense:', error);
         hideLoading();
-        showErrorDialog('Error', 'Failed to add expense. Please try again.');
+        showDialog({
+            type: 'danger',
+            title: 'Error',
+            message: 'Failed to add expense. Please try again.',
+            confirmText: 'OK'
+        });
     }
 }
 
-// Edit and Delete functions
-window.editIncome = async function(index) {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('No user found');
-
-        const { data: profile } = await supabaseClient
-            .from('user_profiles')
-            .select('income_sources, currency')
-            .eq('id', user.id)
-            .single();
-
-        if (!profile?.income_sources || !profile.income_sources[index]) {
-            showErrorDialog('Not Found', 'Income source not found.');
-            return;
-        }
-
-        const income = profile.income_sources[index];
-        document.getElementById('editIncomeName').value = income.name;
-        document.getElementById('editIncomeAmount').value = income.amount;
-        document.getElementById('editIncomeType').value = income.type;
-        document.getElementById('editIncomeIndex').value = index;
-        document.getElementById('editIncomeModal').style.display = 'flex';
-        
-    } catch (error) {
-        console.error('Error editing income:', error);
-        showErrorDialog('Error', 'Failed to load income source for editing.');
-    }
-}
-
+// Delete functions (optimized)
 window.deleteIncome = async function(index) {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('No user found');
+    showDeleteConfirmation('Income Source', 'Income Source', async () => {
+        showLoading('Deleting...');
 
-        const { data: profile } = await supabaseClient
-            .from('user_profiles')
-            .select('income_sources, currency')
-            .eq('id', user.id)
-            .single();
+        try {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) throw new Error('No user found');
 
-        if (!profile?.income_sources || !profile.income_sources[index]) {
-            showErrorDialog('Not Found', 'Income source not found.');
-            return;
-        }
+            const { data: profile } = await supabaseClient
+                .from('user_profiles')
+                .select('income_sources')
+                .eq('id', user.id)
+                .single();
 
-        const incomeName = profile.income_sources[index].name;
-        
-        // Show delete confirmation dialog
-        showDeleteConfirmation(incomeName, 'Income Source', async () => {
-            showLoading('Deleting income source...');
+            if (!profile?.income_sources || !profile.income_sources[index]) {
+                throw new Error('Income source not found');
+            }
 
             const updatedIncomeSources = profile.income_sources.filter((_, i) => i !== index);
 
@@ -1813,73 +1197,50 @@ window.deleteIncome = async function(index) {
 
             if (error) throw error;
 
-            // Show success dialog
-            hideLoading();
-            showSuccessDialog('Deleted Successfully', `"${incomeName}" has been removed from your income sources.`);
+            // Invalidate cache
+            cachedUserProfile = null;
             
-            // Refresh dashboard with currency
-            setTimeout(async () => {
-                await loadDashboardData();
-            }, 1500);
-        });
+            // Reload data quickly
+            await loadDashboardData();
+            
+            // Show success
+            showDialog({
+                type: 'success',
+                title: 'Deleted!',
+                message: 'Income source has been removed.',
+                confirmText: 'OK'
+            });
 
-    } catch (error) {
-        console.error('Error deleting income:', error);
-        hideLoading();
-        showErrorDialog('Error', 'Failed to delete income source. Please try again.');
-    }
-}
-
-window.editExpense = async function(index) {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('No user found');
-
-        const { data: profile } = await supabaseClient
-            .from('user_profiles')
-            .select('expenses, currency')
-            .eq('id', user.id)
-            .single();
-
-        if (!profile?.expenses || !profile.expenses[index]) {
-            showErrorDialog('Not Found', 'Expense not found.');
-            return;
+        } catch (error) {
+            console.error('Error deleting income:', error);
+            hideLoading();
+            showDialog({
+                type: 'danger',
+                title: 'Error',
+                message: 'Failed to delete income source.',
+                confirmText: 'OK'
+            });
         }
-
-        const expense = profile.expenses[index];
-        document.getElementById('editExpenseName').value = expense.name;
-        document.getElementById('editExpenseAmount').value = expense.amount;
-        document.getElementById('editExpenseCategory').value = expense.category;
-        document.getElementById('editExpenseIndex').value = index;
-        document.getElementById('editExpenseModal').style.display = 'flex';
-        
-    } catch (error) {
-        console.error('Error editing expense:', error);
-        showErrorDialog('Error', 'Failed to load expense for editing.');
-    }
+    });
 }
 
 window.deleteExpense = async function(index) {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('No user found');
+    showDeleteConfirmation('Expense', 'Expense', async () => {
+        showLoading('Deleting...');
 
-        const { data: profile } = await supabaseClient
-            .from('user_profiles')
-            .select('expenses, currency')
-            .eq('id', user.id)
-            .single();
+        try {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) throw new Error('No user found');
 
-        if (!profile?.expenses || !profile.expenses[index]) {
-            showErrorDialog('Not Found', 'Expense not found.');
-            return;
-        }
+            const { data: profile } = await supabaseClient
+                .from('user_profiles')
+                .select('expenses')
+                .eq('id', user.id)
+                .single();
 
-        const expenseName = profile.expenses[index].name;
-        
-        // Show delete confirmation dialog
-        showDeleteConfirmation(expenseName, 'Expense', async () => {
-            showLoading('Deleting expense...');
+            if (!profile?.expenses || !profile.expenses[index]) {
+                throw new Error('Expense not found');
+            }
 
             const updatedExpenses = profile.expenses.filter((_, i) => i !== index);
 
@@ -1893,208 +1254,71 @@ window.deleteExpense = async function(index) {
 
             if (error) throw error;
 
-            // Show success dialog
-            hideLoading();
-            showSuccessDialog('Deleted Successfully', `"${expenseName}" has been removed from your expenses.`);
+            // Invalidate cache
+            cachedUserProfile = null;
             
-            // Refresh dashboard with currency
-            setTimeout(async () => {
-                await loadDashboardData();
-            }, 1500);
-        });
-
-    } catch (error) {
-        console.error('Error deleting expense:', error);
-        hideLoading();
-        showErrorDialog('Error', 'Failed to delete expense. Please try again.');
-    }
-}
-
-// Update functions
-window.updateIncome = async function() {
-    try {
-        const index = parseInt(document.getElementById('editIncomeIndex').value);
-        const name = document.getElementById('editIncomeName').value;
-        const amount = parseFloat(document.getElementById('editIncomeAmount').value);
-        const type = document.getElementById('editIncomeType').value;
-
-        if (!name || !amount || amount <= 0) {
-            showErrorDialog('Validation Error', 'Please fill in all fields with valid values.');
-            return;
-        }
-
-        showLoading('Updating income source...');
-
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('No user found');
-
-        const { data: profile } = await supabaseClient
-            .from('user_profiles')
-            .select('income_sources, currency')
-            .eq('id', user.id)
-            .single();
-
-        if (!profile?.income_sources) return;
-
-        const updatedIncomeSources = [...profile.income_sources];
-        updatedIncomeSources[index] = { name, amount, type };
-
-        const { error } = await supabaseClient
-            .from('user_profiles')
-            .update({
-                income_sources: updatedIncomeSources,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
-
-        if (error) throw error;
-
-        // Close modal
-        document.getElementById('editIncomeModal').style.display = 'none';
-        
-        // Show success dialog
-        hideLoading();
-        showUpdateSuccessDialog(name, 'Income Source');
-        
-        // Refresh dashboard with currency
-        setTimeout(async () => {
+            // Reload data quickly
             await loadDashboardData();
-        }, 1500);
+            
+            // Show success
+            showDialog({
+                type: 'success',
+                title: 'Deleted!',
+                message: 'Expense has been removed.',
+                confirmText: 'OK'
+            });
 
-    } catch (error) {
-        console.error('Error updating income:', error);
-        hideLoading();
-        showErrorDialog('Error', 'Failed to update income source. Please try again.');
-    }
-}
-
-window.updateExpense = async function() {
-    try {
-        const index = parseInt(document.getElementById('editExpenseIndex').value);
-        const name = document.getElementById('editExpenseName').value;
-        const amount = parseFloat(document.getElementById('editExpenseAmount').value);
-        const category = document.getElementById('editExpenseCategory').value;
-
-        if (!name || !amount || amount <= 0) {
-            showErrorDialog('Validation Error', 'Please fill in all fields with valid values.');
-            return;
+        } catch (error) {
+            console.error('Error deleting expense:', error);
+            hideLoading();
+            showDialog({
+                type: 'danger',
+                title: 'Error',
+                message: 'Failed to delete expense.',
+                confirmText: 'OK'
+            });
         }
-
-        showLoading('Updating expense...');
-
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('No user found');
-
-        const { data: profile } = await supabaseClient
-            .from('user_profiles')
-            .select('expenses, currency')
-            .eq('id', user.id)
-            .single();
-
-        if (!profile?.expenses) return;
-
-        const updatedExpenses = [...profile.expenses];
-        updatedExpenses[index] = { name, amount, category };
-
-        const { error } = await supabaseClient
-            .from('user_profiles')
-            .update({
-                expenses: updatedExpenses,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
-
-        if (error) throw error;
-
-        // Close modal
-        document.getElementById('editExpenseModal').style.display = 'none';
-        
-        // Show success dialog
-        hideLoading();
-        showUpdateSuccessDialog(name, 'Expense');
-        
-        // Refresh dashboard with currency
-        setTimeout(async () => {
-            await loadDashboardData();
-        }, 1500);
-
-    } catch (error) {
-        console.error('Error updating expense:', error);
-        hideLoading();
-        showErrorDialog('Error', 'Failed to update expense. Please try again.');
-    }
+    });
 }
 
-// Helper function to escape HTML and prevent XSS
+// Helper functions
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// Helper functions
 function formatCurrency(amount, currency = 'USD') {
     if (!currency) currency = 'USD';
     
     try {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: currency
+            currency: currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         }).format(amount);
     } catch (error) {
-        console.error('Error formatting currency:', error);
-        // Fallback to basic formatting
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'USD'
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         }).format(amount);
     }
 }
 
-function formatIncomeType(type) {
-    const typeMap = {
-        'salary': 'Salary',
-        'freelance': 'Freelance',
-        'investment': 'Investment',
-        'rental': 'Rental',
-        'other': 'Other'
-    };
-    return typeMap[type] || type;
-}
-
-function formatExpenseCategory(category) {
-    const categoryMap = {
-        'housing': 'Housing',
-        'utilities': 'Utilities',
-        'food': 'Food & Dining',
-        'transportation': 'Transportation',
-        'entertainment': 'Entertainment',
-        'business': 'Business',
-        'other': 'Other'
-    };
-    return categoryMap[category] || category;
-}
-
-// Initialize dashboard - NO REDIRECTS VERSION
+// Initialize dashboard (optimized)
 async function initializeDashboard() {
     console.log('🚀 Initializing dashboard...');
     
     // Show loading immediately
-    showLoading('Loading your dashboard...', 'Preparing your financial insights');
+    showLoading('Loading dashboard...');
     
-    // Check authentication quietly
     try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         
-        if (error) {
-            console.error('Session error:', error);
-            hideLoading();
-            showErrorOnPage('Authentication error. Please try signing in again.');
-            return;
-        }
-        
-        if (!session) {
-            console.log('No session found');
+        if (error || !session) {
             hideLoading();
             showErrorOnPage('Please sign in to view your dashboard.');
             return;
@@ -2102,192 +1326,83 @@ async function initializeDashboard() {
         
         console.log('✅ User authenticated:', session.user.email);
         
-        // Load dashboard data
+        // Load dashboard data immediately
         await loadDashboardData();
         
-        // Setup modal event listeners
-        document.querySelectorAll('.modal-close, .modal-cancel').forEach(button => {
-            button.addEventListener('click', closeModals);
-        });
-
-        document.addEventListener('click', function(event) {
-            if (event.target.classList.contains('modal')) {
-                closeModals();
-            }
-        });
+        // Setup event listeners
+        setupEventListeners();
         
-        // Setup sign out button if exists
-        const signOutBtn = document.querySelector('.sign-out-btn');
-        if (signOutBtn) {
-            signOutBtn.addEventListener('click', async () => {
-                try {
-                    showLoading('Signing out...');
-                    await supabaseClient.auth.signOut();
-                    hideLoading();
-                    // Manual redirect only when user explicitly signs out
-                    window.location.href = 'login.html';
-                } catch (error) {
-                    console.error('Error signing out:', error);
-                    hideLoading();
-                    showErrorDialog('Error', 'Failed to sign out. Please try again.');
-                }
-            });
-        }
-        
-        // Setup add buttons
-        const addIncomeBtn = document.querySelector('.btn-add-income');
-        const addExpenseBtn = document.querySelector('.btn-add-expense');
-        
-        if (addIncomeBtn) {
-            addIncomeBtn.addEventListener('click', showAddIncomeModal);
-        }
-        
-        if (addExpenseBtn) {
-            addExpenseBtn.addEventListener('click', showAddExpenseModal);
-        }
-        
-        // Setup form submissions
-        const addIncomeForm = document.getElementById('addIncomeForm');
-        const addExpenseForm = document.getElementById('addExpenseForm');
-        const editIncomeForm = document.getElementById('editIncomeForm');
-        const editExpenseForm = document.getElementById('editExpenseForm');
-        
-        if (addIncomeForm) {
-            addIncomeForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                addNewIncome();
-            });
-        }
-        
-        if (addExpenseForm) {
-            addExpenseForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                addNewExpense();
-            });
-        }
-        
-        if (editIncomeForm) {
-            editIncomeForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                updateIncome();
-            });
-        }
-        
-        if (editExpenseForm) {
-            editExpenseForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                updateExpense();
-            });
-        }
-        
-        console.log('✅ Dashboard initialized successfully');
+        console.log('✅ Dashboard initialized');
         
     } catch (error) {
-        console.error('Error initializing dashboard:', error);
+        console.error('Error initializing:', error);
         hideLoading();
-        showErrorOnPage('Failed to load dashboard. Please try again.');
+        showErrorOnPage('Failed to load dashboard. Please refresh.');
     }
 }
 
-// Payment Reminders System
-async function checkPaymentReminders() {
-  try {
-    // 1. Get user data
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) return;
-    
-    // 2. Get user's invoices from Supabase
-    const { data: profile } = await supabaseClient
-      .from('user_profiles')
-      .select('invoices, currency')
-      .eq('id', user.id)
-      .single();
-    
-    if (!profile || !profile.invoices) return;
-    
-    // 3. Check for due invoices
-    const today = new Date();
-    const reminders = [];
-    
-    profile.invoices.forEach(invoice => {
-      if (invoice.status === 'pending') {
-        const dueDate = new Date(invoice.due_date);
-        const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-        
-        // Show reminders for invoices due in 7 days or less
-        if (daysUntilDue <= 7 && daysUntilDue >= 0) {
-          reminders.push({
-            invoiceNumber: invoice.number,
-            client: invoice.client,
-            amount: invoice.amount,
-            dueDate: invoice.due_date,
-            daysUntilDue: daysUntilDue,
-            currency: profile.currency || 'USD'
-          });
+// Setup event listeners (optimized)
+function setupEventListeners() {
+    // Modal close buttons
+    document.querySelectorAll('.modal-close, .modal-cancel').forEach(button => {
+        button.addEventListener('click', closeModals);
+    });
+
+    // Close modals on background click
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            closeModals();
         }
-        
-        // Show overdue invoices
-        if (daysUntilDue < 0) {
-          reminders.push({
-            invoiceNumber: invoice.number,
-            client: invoice.client,
-            amount: invoice.amount,
-            dueDate: invoice.due_date,
-            daysUntilDue: daysUntilDue,
-            overdue: true,
-            currency: profile.currency || 'USD'
-          });
-        }
-      }
     });
     
-    // 4. Display reminders if any exist
-    if (reminders.length > 0) {
-      displayReminders(reminders);
+    // Add buttons
+    const addIncomeBtn = document.querySelector('.btn-add-income');
+    const addExpenseBtn = document.querySelector('.btn-add-expense');
+    
+    if (addIncomeBtn) addIncomeBtn.addEventListener('click', showAddIncomeModal);
+    if (addExpenseBtn) addExpenseBtn.addEventListener('click', showAddExpenseModal);
+    
+    // Form submissions
+    const addIncomeForm = document.getElementById('addIncomeForm');
+    const addExpenseForm = document.getElementById('addExpenseForm');
+    
+    if (addIncomeForm) {
+        addIncomeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addNewIncome();
+        });
     }
     
-  } catch (error) {
-    console.error('Error checking reminders:', error);
-  }
+    if (addExpenseForm) {
+        addExpenseForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addNewExpense();
+        });
+    }
+    
+    // Sign out button
+    const signOutBtn = document.querySelector('.sign-out-btn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', async () => {
+            try {
+                showLoading('Signing out...');
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            } catch (error) {
+                console.error('Error signing out:', error);
+                hideLoading();
+                showDialog({
+                    type: 'danger',
+                    title: 'Error',
+                    message: 'Failed to sign out.',
+                    confirmText: 'OK'
+                });
+            }
+        });
+    }
 }
 
-function displayReminders(reminders) {
-  const container = document.getElementById('reminderContainer');
-  const messageElement = document.getElementById('reminderMessage');
-  
-  if (!container || !messageElement) return;
-  
-  // Group reminders
-  const overdue = reminders.filter(r => r.overdue);
-  const upcoming = reminders.filter(r => !r.overdue);
-  
-  let message = '';
-  
-  if (overdue.length > 0) {
-    message += `<strong>Overdue:</strong> `;
-    message += overdue.map(r => 
-      `${r.invoiceNumber} (${r.client}) - ${formatCurrency(r.amount, r.currency)} - ${Math.abs(r.daysUntilDue)} days overdue`
-    ).join(', ');
-    message += '<br>';
-  }
-  
-  if (upcoming.length > 0) {
-    message += `<strong>Due soon:</strong> `;
-    message += upcoming.map(r => 
-      `${r.invoiceNumber} (${r.client}) - ${formatCurrency(r.amount, r.currency)} - due in ${r.daysUntilDue} days`
-    ).join(', ');
-  }
-  
-  messageElement.innerHTML = message;
-  container.style.display = 'block';
-  
-  // Auto-hide after 10 seconds (optional)
-  setTimeout(() => {
-    container.style.display = 'none';
-  }, 10000);
-}
-
-// Create HTML modals if they don't exist
+// Create HTML modals (optimized)
 function createModals() {
     if (!document.getElementById('addIncomeModal')) {
         const modalHTML = `
@@ -2295,26 +1410,24 @@ function createModals() {
             <div id="addIncomeModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2 class="modal-title">Add Income Source</h2>
+                        <h2 class="modal-title">Add Income</h2>
                         <button class="modal-close">&times;</button>
                     </div>
                     <form id="addIncomeForm">
                         <div class="modal-body">
                             <div class="form-group">
-                                <label class="form-label" for="newIncomeName">Name</label>
-                                <input type="text" id="newIncomeName" class="form-input" placeholder="e.g., Salary, Freelance Work" required>
+                                <label class="form-label">Name</label>
+                                <input type="text" id="newIncomeName" class="form-input" placeholder="e.g., Salary" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="newIncomeAmount">Monthly Amount</label>
-                                <input type="number" id="newIncomeAmount" class="form-input" placeholder="0.00" min="0" step="0.01" required>
+                                <label class="form-label">Monthly Amount</label>
+                                <input type="number" id="newIncomeAmount" class="form-input" placeholder="0" min="0" step="1" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="newIncomeType">Type</label>
+                                <label class="form-label">Type</label>
                                 <select id="newIncomeType" class="form-select" required>
                                     <option value="salary">Salary</option>
                                     <option value="freelance">Freelance</option>
-                                    <option value="investment">Investment</option>
-                                    <option value="rental">Rental Income</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>
@@ -2337,22 +1450,19 @@ function createModals() {
                     <form id="addExpenseForm">
                         <div class="modal-body">
                             <div class="form-group">
-                                <label class="form-label" for="newExpenseName">Name</label>
-                                <input type="text" id="newExpenseName" class="form-input" placeholder="e.g., Rent, Utilities" required>
+                                <label class="form-label">Name</label>
+                                <input type="text" id="newExpenseName" class="form-input" placeholder="e.g., Rent" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="newExpenseAmount">Monthly Amount</label>
-                                <input type="number" id="newExpenseAmount" class="form-input" placeholder="0.00" min="0" step="0.01" required>
+                                <label class="form-label">Monthly Amount</label>
+                                <input type="number" id="newExpenseAmount" class="form-input" placeholder="0" min="0" step="1" required>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="newExpenseCategory">Category</label>
+                                <label class="form-label">Category</label>
                                 <select id="newExpenseCategory" class="form-select" required>
                                     <option value="housing">Housing</option>
-                                    <option value="utilities">Utilities</option>
-                                    <option value="food">Food & Dining</option>
+                                    <option value="food">Food</option>
                                     <option value="transportation">Transportation</option>
-                                    <option value="entertainment">Entertainment</option>
-                                    <option value="business">Business</option>
                                     <option value="other">Other</option>
                                 </select>
                             </div>
@@ -2364,115 +1474,13 @@ function createModals() {
                     </form>
                 </div>
             </div>
-
-            <!-- Edit Income Modal -->
-            <div id="editIncomeModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2 class="modal-title">Edit Income Source</h2>
-                        <button class="modal-close">&times;</button>
-                    </div>
-                    <form id="editIncomeForm">
-                        <input type="hidden" id="editIncomeIndex">
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label class="form-label" for="editIncomeName">Name</label>
-                                <input type="text" id="editIncomeName" class="form-input" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="editIncomeAmount">Monthly Amount</label>
-                                <input type="number" id="editIncomeAmount" class="form-input" min="0" step="0.01" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="editIncomeType">Type</label>
-                                <select id="editIncomeType" class="form-select" required>
-                                    <option value="salary">Salary</option>
-                                    <option value="freelance">Freelance</option>
-                                    <option value="investment">Investment</option>
-                                    <option value="rental">Rental Income</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Update Income</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Edit Expense Modal -->
-            <div id="editExpenseModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2 class="modal-title">Edit Expense</h2>
-                        <button class="modal-close">&times;</button>
-                    </div>
-                    <form id="editExpenseForm">
-                        <input type="hidden" id="editExpenseIndex">
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label class="form-label" for="editExpenseName">Name</label>
-                                <input type="text" id="editExpenseName" class="form-input" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="editExpenseAmount">Monthly Amount</label>
-                                <input type="number" id="editExpenseAmount" class="form-input" min="0" step="0.01" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="editExpenseCategory">Category</label>
-                                <select id="editExpenseCategory" class="form-select" required>
-                                    <option value="housing">Housing</option>
-                                    <option value="utilities">Utilities</option>
-                                    <option value="food">Food & Dining</option>
-                                    <option value="transportation">Transportation</option>
-                                    <option value="entertainment">Entertainment</option>
-                                    <option value="business">Business</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Update Expense</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
         `;
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
     }
 }
 
-// Create reminder container if it doesn't exist
-function createReminderContainer() {
-    if (!document.getElementById('reminderContainer')) {
-        const reminderHTML = `
-            <div id="reminderContainer" style="display: none; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 16px 0;">
-                <div id="reminderMessage" style="font-size: 14px; color: #92400e;"></div>
-            </div>
-        `;
-        
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-            mainContent.insertAdjacentHTML('afterbegin', reminderHTML);
-        }
-    }
-}
-
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Create modals and reminder container
     createModals();
-    createReminderContainer();
-    
-    // Check reminders when dashboard loads
-    setTimeout(() => {
-        checkPaymentReminders();
-    }, 2000);
-    
-    // Check every hour (optional)
-    setInterval(checkPaymentReminders, 60 * 60 * 1000);
 });
