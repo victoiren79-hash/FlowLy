@@ -143,6 +143,9 @@ nav {
     .tagline {
         display: none;
     }
+    .nav-container{
+        height: 35px;
+    }
     .logo-img {
         height: 70px; /* Adjusted for mobile */
     }
@@ -1165,4 +1168,5 @@ nav .logo-img {
 .trend-neutral {
     background: #f3f4f6;
     color: #4b5563;
+
 }
