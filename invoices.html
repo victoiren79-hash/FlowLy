@@ -738,10 +738,12 @@
     </div>
 
 <script>
+    // Define Supabase URL and key at the top
     const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Create Supabase client - using a different variable name to avoid conflict
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     let currentInvoices = [];
     let deleteInvoiceIndex = null;
@@ -774,7 +776,7 @@
     };
 
     async function checkAuth() {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error || !session) {
             window.location.href = 'index.html';
             return null;
@@ -805,12 +807,17 @@
             return 'N/A';
         }
         
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: displayCurrency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
+        try {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: displayCurrency,
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        } catch (error) {
+            // Fallback formatting
+            return (currencySymbols[displayCurrency] || '$') + parseFloat(amount).toFixed(2);
+        }
     }
 
     function updateCurrencyDisplay() {
@@ -827,7 +834,7 @@
             if (!session) return;
 
             // Get from user_profiles table
-            const { data: profile, error: profileError } = await supabase
+            const { data: profile, error: profileError } = await supabaseClient
                 .from('user_profiles')
                 .select('currency')
                 .eq('id', currentUserId)
@@ -1033,7 +1040,7 @@
             console.log('Loading invoices for user:', currentUserId);
             
             // Load invoices from user_profiles table
-            const { data: profile, error } = await supabase
+            const { data: profile, error } = await supabaseClient
                 .from('user_profiles')
                 .select('invoices')
                 .eq('id', currentUserId)
@@ -1055,7 +1062,8 @@
                         client: invoice.client,
                         amount: invoice.amount,
                         due_date: invoice.due_date,
-                        status: invoice.status
+                        status: invoice.status,
+                        currency: invoice.currency // Added currency check
                     });
                 });
             }
@@ -1100,7 +1108,7 @@
             console.log('Current invoices before delete:', currentInvoices);
 
             // Get current profile with all data
-            const { data: profile, error: profileError } = await supabase
+            const { data: profile, error: profileError } = await supabaseClient
                 .from('user_profiles')
                 .select('*')
                 .eq('id', currentUserId)
@@ -1118,7 +1126,7 @@
             console.log('Updated invoices after delete:', updatedInvoices);
 
             // Update the user profile with the new invoices array
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('user_profiles')
                 .update({ 
                     invoices: updatedInvoices,
@@ -1194,7 +1202,7 @@
 
         // Realtime subscription for user_profiles table
         if (currentUserId) {
-            supabase
+            supabaseClient
                 .channel('user-profile-channel')
                 .on('postgres_changes', 
                     { 
@@ -1238,9 +1246,4 @@
     });
 </script>
 </body>
-
 </html>
-
-
-
-
