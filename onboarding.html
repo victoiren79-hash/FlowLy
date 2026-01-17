@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4"></script>
     
     <!-- Paddle.js -->
-    <script src="https://cdn.paddle.com/paddle/paddle.js"></script>
+    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 
     <style>
         :root {
@@ -56,7 +56,6 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
             width: 100%;
             max-width: 760px;
-           
             border: 1px solid var(--gray-200);
         }
        
@@ -776,8 +775,7 @@
             const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
             
             // ====== PADDLE CONFIGURATION ======
-            // ⚠️ REPLACE WITH YOUR ACTUAL IDs ⚠️
-            const PADDLE_VENDOR_ID =  271142;
+            const PADDLE_VENDOR_ID = 271142;
             const PADDLE_PRODUCT_ID = "pro_01kf5kfhcc88mxs7j6gjm2bbkq";
             const PADDLE_ENVIRONMENT = 'production';
             
@@ -786,6 +784,7 @@
             let tempOnboardingData = {};
             let isPaddleInitialized = false;
             let supabase;
+            let paddleInstance;
 
             // ====== UTILITY FUNCTIONS ======
             function showLoading(message = 'Processing...') {
@@ -1010,7 +1009,7 @@
                         </div>
                         <div class="form-group">
                             <label>Client name</label>
-                            <input type="text" class="invoice-client" placeholder="Client Company">
+                                <input type="text" class="invoice-client" placeholder="Client Company">
                         </div>
                         <div class="form-group">
                             <label>Amount</label>
@@ -1113,42 +1112,43 @@
             }
 
             // ====== PADDLE PAYMENT FUNCTIONS ======
-            function initializePaddle() {
+            async function initializePaddle() {
                 if (isPaddleInitialized) return;
                 
                 try {
-                    Paddle.Environment.set(PADDLE_ENVIRONMENT);
-                    
-                    Paddle.Setup({ 
-                        vendor: PADDLE_VENDOR_ID,
+                    // Initialize Paddle with the new v2 API
+                    paddleInstance = await Paddle.Initialize({
+                        token: 'live_ec3573e424392d46d0eac8f33b23bb', // Your Paddle publishable key
+                        environment: 'production',
                         eventCallback: handlePaddleEvent
                     });
                     
                     isPaddleInitialized = true;
-                    console.log('Paddle initialized');
+                    console.log('Paddle v2 initialized successfully');
                     
                 } catch (error) {
-                    console.error('Paddle initialization error:', error);
+                    console.error('Paddle v2 initialization error:', error);
+                    showAlert('Payment system initialization failed. Please refresh and try again.', 'error');
                 }
             }
 
             function handlePaddleEvent(event) {
-                console.log('Paddle event:', event.event);
+                console.log('Paddle event:', event.name, event.data);
                 
-                switch(event.event) {
-                    case 'Checkout.Loaded':
+                switch(event.name) {
+                    case 'checkout.loaded':
                         document.getElementById('payment-processing').classList.remove('active');
                         break;
                         
-                    case 'Checkout.Complete':
-                        handlePaymentSuccess(event.eventData);
+                    case 'checkout.completed':
+                        handlePaymentSuccess(event.data);
                         break;
                         
-                    case 'Checkout.Close':
+                    case 'checkout.closed':
                         handlePaymentClose();
                         break;
                         
-                    case 'Checkout.Error':
+                    case 'checkout.error':
                         showAlert('Payment error. Please try again.', 'error');
                         handlePaymentClose();
                         break;
@@ -1171,7 +1171,7 @@
                     
                     // Store payment info
                     const paymentInfo = {
-                        paddle_event: 'Checkout.Complete',
+                        paddle_event: 'checkout.completed',
                         checkout_id: eventData.checkout?.id || 'N/A',
                         order_id: eventData.order?.id || 'N/A',
                         amount: eventData.order?.total || '29.00',
@@ -1238,7 +1238,7 @@
                     console.error('Account creation error:', error);
                     hideLoading();
                     
-                    showAlert('Payment succeeded but account creation failed. Contact support@flowly.com', 'error');
+                    showAlert('Payment succeeded but account creation failed. Contact victoiren79@gmail.com', 'error');
                     handlePaymentClose();
                 }
             }
@@ -1257,7 +1257,7 @@
                 document.getElementById('checkout-btn').disabled = false;
             }
 
-            function openPaddleCheckout() {
+            async function openPaddleCheckout() {
                 if (!collectAllData()) {
                     showAlert('Please fill in all required information', 'error');
                     return;
@@ -1276,17 +1276,38 @@
                 document.getElementById('payment-processing').classList.add('active');
                 document.getElementById('checkout-btn').disabled = true;
 
-                // Open Paddle checkout
+                // Open Paddle checkout with new v2 API
                 try {
-                    Paddle.Checkout.open({
-                        product: PADDLE_PRODUCT_ID,
-                        email: userEmail,
-                        passthrough: JSON.stringify({ 
+                    // Generate unique transaction ID
+                    const transactionId = `flowly_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    const checkoutResult = await Paddle.Checkout.open({
+                        items: [
+                            {
+                                priceId: PADDLE_PRODUCT_ID, // Your Paddle Price ID
+                                quantity: 1
+                            }
+                        ],
+                        customer: {
                             email: userEmail,
-                            full_name: fullName,
+                            name: fullName
+                        },
+                        settings: {
+                            displayMode: 'overlay',
+                            theme: 'light',
+                            frameTarget: 'checkout-container',
+                            frameStyle: 'width: 100%; min-height: 400px; border: none;'
+                        },
+                        customData: {
+                            user_email: userEmail,
+                            user_name: fullName,
+                            onboarding_completed: 'true',
                             timestamp: new Date().toISOString()
-                        })
+                        }
                     });
+
+                    console.log('Checkout opened:', checkoutResult);
+                    
                 } catch (error) {
                     console.error('Error opening checkout:', error);
                     showAlert('Unable to open checkout. Please try again.', 'error');
@@ -1334,5 +1355,3 @@
     </script>
 </body>
 </html>
-
-
