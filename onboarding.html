@@ -382,20 +382,18 @@
     </div>
 
     <script>
-        // ====== CONFIGURATION ======
-        const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
-        
-        // Initialize Supabase
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         // ====== GLOBAL VARIABLES ======
         let currentSection = 1;
         let tempOnboardingData = {};
         let isPaddleInitialized = false;
 
+        // ====== SUPABASE INITIALIZATION ======
+        const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // ====== NAVIGATION FUNCTIONS ======
-        function showAlert(message, type = 'error') {
+        window.showAlert = function(message, type = 'error') {
             const alertContainer = document.getElementById('alertContainer');
             alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
             setTimeout(() => {
@@ -403,7 +401,7 @@
             }, 3000);
         }
 
-        function updateProgress() {
+        window.updateProgress = function() {
             console.log('Updating progress to section:', currentSection);
             
             // Update progress steps
@@ -442,7 +440,7 @@
             }
         }
 
-        function validateCurrentSection() {
+        window.validateCurrentSection = function() {
             if (currentSection === 1) {
                 const fullName = document.getElementById('fullName').value.trim();
                 const userEmail = document.getElementById('userEmail').value.trim();
@@ -462,7 +460,7 @@
             return true;
         }
 
-        function nextSection() {
+        window.nextSection = function() {
             console.log('Next button clicked, current section:', currentSection);
             
             if (!validateCurrentSection()) {
@@ -478,7 +476,7 @@
             }
         }
 
-        function previousSection() {
+        window.previousSection = function() {
             console.log('Previous button clicked, current section:', currentSection);
             if (currentSection > 1) {
                 currentSection--;
@@ -487,7 +485,7 @@
         }
 
         // ====== DYNAMIC FORM FUNCTIONS ======
-        function addIncomeSource() {
+        window.addIncomeSource = function() {
             const div = document.createElement('div');
             div.className = 'income-source';
             div.innerHTML = `
@@ -521,7 +519,7 @@
             document.getElementById('incomeSources').appendChild(div);
         }
 
-        function addExpenseItem() {
+        window.addExpenseItem = function() {
             const div = document.createElement('div');
             div.className = 'expense-item';
             div.innerHTML = `
@@ -557,7 +555,7 @@
             document.getElementById('expenseItems').appendChild(div);
         }
 
-        function addInvoiceItem() {
+        window.addInvoiceItem = function() {
             const div = document.createElement('div');
             div.className = 'invoice-item';
             
@@ -600,7 +598,7 @@
         }
 
         // ====== DATA COLLECTION ======
-        function collectAllData() {
+        window.collectAllData = function() {
             const fullName = document.getElementById('fullName').value.trim();
             const userEmail = document.getElementById('userEmail').value.trim();
             
@@ -669,7 +667,7 @@
         }
 
         // ====== PAYMENT ======
-        function initializePaddle() {
+        window.initializePaddle = function() {
             if (isPaddleInitialized) return;
             
             try {
@@ -689,32 +687,7 @@
             }
         }
 
-        document.getElementById('checkout-btn').addEventListener('click', () => {
-            if (!collectAllData()) {
-                showAlert('Please fill in all required information', 'error');
-                return;
-            }
-
-            document.getElementById('payment-processing').classList.add('active');
-            document.getElementById('checkout-btn').disabled = true;
-
-            // NOTE: You need to replace these with your actual Paddle IDs
-            const PADDLE_PRODUCT_ID = 67890;
-            const userEmail = tempOnboardingData.email;
-            const fullName = tempOnboardingData.full_name;
-
-            // Open Paddle checkout
-            Paddle.Checkout.open({
-                product: PADDLE_PRODUCT_ID,
-                email: userEmail,
-                passthrough: JSON.stringify({ 
-                    email: userEmail,
-                    full_name: fullName 
-                })
-            });
-        });
-
-        function handlePaddleEvent(event) {
+        window.handlePaddleEvent = function(event) {
             console.log('Paddle event:', event);
             
             if (event.event === 'Checkout.Complete') {
@@ -724,7 +697,7 @@
             }
         }
 
-        async function handlePaymentSuccess(eventData) {
+        window.handlePaymentSuccess = async function(eventData) {
             console.log('Payment successful, creating account...');
             
             try {
@@ -818,7 +791,7 @@
             }
         }
 
-        function showSuccessAndRedirect() {
+        window.showSuccessAndRedirect = function() {
             currentSection = 5;
             updateProgress();
             
@@ -828,7 +801,7 @@
             }, 3000);
         }
 
-        function handlePaymentClose() {
+        window.handlePaymentClose = function() {
             document.getElementById('payment-processing').classList.remove('active');
             document.getElementById('checkout-btn').disabled = false;
             console.log('Checkout closed by user');
@@ -845,6 +818,32 @@
             if (dueDateInput) {
                 dueDateInput.value = formattedDate;
             }
+            
+            // Setup checkout button event listener
+            document.getElementById('checkout-btn').addEventListener('click', () => {
+                if (!collectAllData()) {
+                    showAlert('Please fill in all required information', 'error');
+                    return;
+                }
+
+                document.getElementById('payment-processing').classList.add('active');
+                document.getElementById('checkout-btn').disabled = true;
+
+                // NOTE: You need to replace these with your actual Paddle IDs
+                const PADDLE_PRODUCT_ID = 67890;
+                const userEmail = tempOnboardingData.email;
+                const fullName = tempOnboardingData.full_name;
+
+                // Open Paddle checkout
+                Paddle.Checkout.open({
+                    product: PADDLE_PRODUCT_ID,
+                    email: userEmail,
+                    passthrough: JSON.stringify({ 
+                        email: userEmail,
+                        full_name: fullName 
+                    })
+                });
+            });
             
             // Initialize progress
             updateProgress();
