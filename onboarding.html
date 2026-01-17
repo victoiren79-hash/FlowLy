@@ -194,7 +194,7 @@
             <div class="progress-step active"><div class="step-number">1</div><span>Basic Info</span></div>
             <div class="progress-step"><div class="step-number">2</div><span>Income & Expenses</span></div>
             <div class="progress-step"><div class="step-number">3</div><span>Invoices</span></div>
-            <div class="progress-step"><div class="step-number">4</div><span>Payment</div>
+            <div class="progress-step"><div class="step-number">4</div><span>Payment</span></div>
         </div>
        
         <div class="onboarding-content">
@@ -394,7 +394,7 @@
         let tempOnboardingData = {};
         let isPaddleInitialized = false;
 
-        // ====== SIMPLE NAVIGATION ======
+        // ====== NAVIGATION FUNCTIONS ======
         function showAlert(message, type = 'error') {
             const alertContainer = document.getElementById('alertContainer');
             alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
@@ -404,6 +404,8 @@
         }
 
         function updateProgress() {
+            console.log('Updating progress to section:', currentSection);
+            
             // Update progress steps
             document.querySelectorAll('.progress-step').forEach((step, index) => {
                 const stepNumber = index + 1;
@@ -430,9 +432,12 @@
                 document.getElementById('prevBtn').textContent = 'Back';
                 collectAllData();
                 initializePaddle();
+            } else if (currentSection === 5) {
+                // Success section - hide buttons completely
+                document.querySelector('.form-actions').style.display = 'none';
             } else {
                 document.getElementById('nextBtn').style.display = 'inline-block';
-                document.getElementById('nextBtn').textContent = 'Next';
+                document.getElementById('nextBtn').textContent = currentSection === 3 ? 'Continue to Payment' : 'Next';
                 document.getElementById('prevBtn').textContent = 'Previous';
             }
         }
@@ -467,6 +472,9 @@
             if (currentSection < 4) {
                 currentSection++;
                 updateProgress();
+            } else if (currentSection === 4) {
+                // This should not be called since button is hidden on section 4
+                console.log('Payment section - next should not be visible');
             }
         }
 
@@ -811,10 +819,9 @@
         }
 
         function showSuccessAndRedirect() {
-            document.getElementById('section4').style.display = 'none';
-            document.getElementById('section5').style.display = 'block';
-            document.querySelector('.form-actions').style.display = 'none';
-
+            currentSection = 5;
+            updateProgress();
+            
             // Redirect to dashboard
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
