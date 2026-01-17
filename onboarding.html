@@ -270,7 +270,7 @@
                         </div>
                     </div>
                 </div>
-                <button type="button" class="add-btn" onclick="addIncomeSource()">+ Add Income Source</button>
+                <button type="button" class="add-btn" id="addIncomeBtn">+ Add Income Source</button>
 
                 <h3 style="margin: 24px 0 12px; color: var(--gray-800); font-size: 15px;">Regular Expenses</h3>
                 <div id="expenseItems">
@@ -302,7 +302,7 @@
                         </div>
                     </div>
                 </div>
-                <button type="button" class="add-btn" onclick="addExpenseItem()">+ Add Expense</button>
+                <button type="button" class="add-btn" id="addExpenseBtn">+ Add Expense</button>
             </div>
 
             <!-- Section 3: Invoices -->
@@ -339,7 +339,7 @@
                         </div>
                     </div>
                 </div>
-                <button type="button" class="add-btn" onclick="addInvoiceItem()">+ Add Invoice</button>
+                <button type="button" class="add-btn" id="addInvoiceBtn">+ Add Invoice</button>
             </div>
 
             <!-- Section 4: Payment -->
@@ -375,8 +375,8 @@
             </div>
 
             <div class="form-actions">
-                <button type="button" class="btn btn-secondary" id="prevBtn" onclick="previousSection()" disabled>Previous</button>
-                <button type="button" class="btn btn-primary" id="nextBtn" onclick="nextSection()">Next</button>
+                <button type="button" class="btn btn-secondary" id="prevBtn" disabled>Previous</button>
+                <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
             </div>
         </div>
     </div>
@@ -390,10 +390,10 @@
         // ====== SUPABASE INITIALIZATION ======
         const SUPABASE_URL = 'https://wkcbggxtmwttdjxtoieh.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_SkNcPG8vCj2xB-KORM4_tQ_Q2_MlBwe';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabase;
 
         // ====== NAVIGATION FUNCTIONS ======
-        window.showAlert = function(message, type = 'error') {
+        function showAlert(message, type = 'error') {
             const alertContainer = document.getElementById('alertContainer');
             alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
             setTimeout(() => {
@@ -401,7 +401,7 @@
             }, 3000);
         }
 
-        window.updateProgress = function() {
+        function updateProgress() {
             console.log('Updating progress to section:', currentSection);
             
             // Update progress steps
@@ -440,7 +440,7 @@
             }
         }
 
-        window.validateCurrentSection = function() {
+        function validateCurrentSection() {
             if (currentSection === 1) {
                 const fullName = document.getElementById('fullName').value.trim();
                 const userEmail = document.getElementById('userEmail').value.trim();
@@ -460,7 +460,7 @@
             return true;
         }
 
-        window.nextSection = function() {
+        function nextSection() {
             console.log('Next button clicked, current section:', currentSection);
             
             if (!validateCurrentSection()) {
@@ -476,7 +476,7 @@
             }
         }
 
-        window.previousSection = function() {
+        function previousSection() {
             console.log('Previous button clicked, current section:', currentSection);
             if (currentSection > 1) {
                 currentSection--;
@@ -485,13 +485,13 @@
         }
 
         // ====== DYNAMIC FORM FUNCTIONS ======
-        window.addIncomeSource = function() {
+        function addIncomeSource() {
             const div = document.createElement('div');
             div.className = 'income-source';
             div.innerHTML = `
                 <div class="item-header">
                     <div class="item-title">Income Source</div>
-                    <button type="button" class="remove-btn" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                    <button type="button" class="remove-btn">Remove</button>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
@@ -516,16 +516,23 @@
                         </select>
                     </div>
                 </div>`;
+            
+            // Add remove button functionality
+            const removeBtn = div.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function() {
+                div.remove();
+            });
+            
             document.getElementById('incomeSources').appendChild(div);
         }
 
-        window.addExpenseItem = function() {
+        function addExpenseItem() {
             const div = document.createElement('div');
             div.className = 'expense-item';
             div.innerHTML = `
                 <div class="item-header">
                     <div class="item-title">Expense</div>
-                    <button type="button" class="remove-btn" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                    <button type="button" class="remove-btn">Remove</button>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
@@ -552,10 +559,17 @@
                         </select>
                     </div>
                 </div>`;
+            
+            // Add remove button functionality
+            const removeBtn = div.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function() {
+                div.remove();
+            });
+            
             document.getElementById('expenseItems').appendChild(div);
         }
 
-        window.addInvoiceItem = function() {
+        function addInvoiceItem() {
             const div = document.createElement('div');
             div.className = 'invoice-item';
             
@@ -567,7 +581,7 @@
             div.innerHTML = `
                 <div class="item-header">
                     <div class="item-title">Invoice</div>
-                    <button type="button" class="remove-btn" onclick="this.parentElement.parentElement.remove()">Remove</button>
+                    <button type="button" class="remove-btn">Remove</button>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
@@ -594,11 +608,18 @@
                         <textarea class="invoice-description" rows="2" placeholder="Optional description"></textarea>
                     </div>
                 </div>`;
+            
+            // Add remove button functionality
+            const removeBtn = div.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', function() {
+                div.remove();
+            });
+            
             document.getElementById('invoiceItems').appendChild(div);
         }
 
         // ====== DATA COLLECTION ======
-        window.collectAllData = function() {
+        function collectAllData() {
             const fullName = document.getElementById('fullName').value.trim();
             const userEmail = document.getElementById('userEmail').value.trim();
             
@@ -667,7 +688,7 @@
         }
 
         // ====== PAYMENT ======
-        window.initializePaddle = function() {
+        function initializePaddle() {
             if (isPaddleInitialized) return;
             
             try {
@@ -687,7 +708,7 @@
             }
         }
 
-        window.handlePaddleEvent = function(event) {
+        function handlePaddleEvent(event) {
             console.log('Paddle event:', event);
             
             if (event.event === 'Checkout.Complete') {
@@ -697,7 +718,7 @@
             }
         }
 
-        window.handlePaymentSuccess = async function(eventData) {
+        async function handlePaymentSuccess(eventData) {
             console.log('Payment successful, creating account...');
             
             try {
@@ -791,7 +812,7 @@
             }
         }
 
-        window.showSuccessAndRedirect = function() {
+        function showSuccessAndRedirect() {
             currentSection = 5;
             updateProgress();
             
@@ -801,7 +822,7 @@
             }, 3000);
         }
 
-        window.handlePaymentClose = function() {
+        function handlePaymentClose() {
             document.getElementById('payment-processing').classList.remove('active');
             document.getElementById('checkout-btn').disabled = false;
             console.log('Checkout closed by user');
@@ -809,6 +830,9 @@
 
         // ====== INITIALIZATION ======
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Supabase
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
             // Set default date for initial invoice
             const defaultDate = new Date();
             defaultDate.setDate(defaultDate.getDate() + 30);
@@ -818,6 +842,15 @@
             if (dueDateInput) {
                 dueDateInput.value = formattedDate;
             }
+            
+            // Setup event listeners for navigation buttons
+            document.getElementById('nextBtn').addEventListener('click', nextSection);
+            document.getElementById('prevBtn').addEventListener('click', previousSection);
+            
+            // Setup event listeners for add buttons
+            document.getElementById('addIncomeBtn').addEventListener('click', addIncomeSource);
+            document.getElementById('addExpenseBtn').addEventListener('click', addExpenseItem);
+            document.getElementById('addInvoiceBtn').addEventListener('click', addInvoiceItem);
             
             // Setup checkout button event listener
             document.getElementById('checkout-btn').addEventListener('click', () => {
